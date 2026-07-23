@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -22,33 +22,27 @@ export default function TodoScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [taskName, setTaskName] = useState("");
 
-  const loadTasks = useCallback(async () => {
-    try {
-      const data = await AsyncStorage.getItem(STORAGE_KEY);
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        const data = await AsyncStorage.getItem(STORAGE_KEY);
 
-      if (data) {
-        setTasks(JSON.parse(data));
+        if (data) {
+          setTasks(JSON.parse(data));
+        }
+      } catch (error) {
+        console.log(error);
       }
-    } catch (error) {
-      console.log(error);
-    }
+    };
+
+    void loadTasks();
   }, []);
 
-  const saveTasks = useCallback(async () => {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-    } catch (error) {
-      console.log(error);
-    }
+  useEffect(() => {
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)).catch(
+      console.error
+    );
   }, [tasks]);
-
-  useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
-
-  useEffect(() => {
-    saveTasks();
-  }, [saveTasks]);
 
   function addTask() {
     if (!taskName.trim()) return;
