@@ -7,19 +7,68 @@ export default StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
   },
-
   title: {
     fontSize: 30,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: 10,
     textAlign: "center",
+    color: "#1F2937",
   },
-
+  loadingText: {
+    fontSize: 18,
+    textAlign: "center",
+    color: "#6B7280",
+    marginTop: 40,
+  },
+  modeButton: {
+    backgroundColor: "#2563EB",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  modeButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  confirmationButton: {
+    backgroundColor: "#6B7280",
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  confirmationActive: {
+    backgroundColor: "#10B981",
+  },
+  confirmationButtonText: {
+    color: "#FFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  statsContainer: {
+    backgroundColor: "#FFF",
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    elevation: 2,
+  },
+  statsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 8,
+    color: "#1F2937",
+  },
+  statsText: {
+    fontSize: 15,
+    color: "#4B5563",
+    marginBottom: 4,
+  },
   inputContainer: {
     flexDirection: "row",
-    marginBottom: 20,
+    marginBottom: 10,
   },
-
   input: {
     flex: 1,
     backgroundColor: "#FFF",
@@ -29,7 +78,6 @@ export default StyleSheet.create({
     borderWidth: 1,
     borderColor: "#DDD",
   },
-
   addButton: {
     width: 55,
     height: 55,
@@ -39,20 +87,108 @@ export default StyleSheet.create({
     borderRadius: 10,
     marginLeft: 10,
   },
-
   addButtonText: {
     color: "#FFF",
     fontSize: 30,
     fontWeight: "bold",
   },
-
+  prioritySelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 15,
+    flexWrap: "wrap",
+  },
+  priorityLabel: {
+    fontWeight: "bold",
+    marginRight: 8,
+    color: "#4B5563",
+    fontSize: 14,
+  },
+  priorityOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    marginHorizontal: 4,
+    backgroundColor: "#E5E7EB",
+  },
+  priorityOptionActive: {
+    borderWidth: 2,
+    borderColor: "#3B82F6",
+  },
+  priorityOptionText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#1F2937",
+  },
+  highPriority: {
+    backgroundColor: "#EF4444",
+  },
+  mediumPriority: {
+    backgroundColor: "#F59E0B",
+  },
+  lowPriority: {
+    backgroundColor: "#10B981",
+  },
+  filterContainer: {
+    marginBottom: 15,
+  },
+  searchInput: {
+    backgroundColor: "#FFF",
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: "#DDD",
+    marginBottom: 8,
+  },
+  filterButtons: {
+    flexDirection: "row",
+    marginBottom: 8,
+  },
+  filterButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: "#E5E7EB",
+    marginRight: 8,
+  },
+  filterButtonActive: {
+    backgroundColor: "#3B82F6",
+  },
+  filterButtonText: {
+    color: "#1F2937",
+    fontWeight: "600",
+  },
+  sortContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  sortLabel: {
+    fontWeight: "bold",
+    marginRight: 8,
+    color: "#4B5563",
+    fontSize: 14,
+  },
+  sortButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: "#E5E7EB",
+    marginHorizontal: 4,
+  },
+  sortButtonActive: {
+    backgroundColor: "#3B82F6",
+  },
+  sortButtonText: {
+    fontSize: 16,
+  },
   empty: {
     textAlign: "center",
     marginTop: 40,
-    color: "#888",
+    color: "#9CA3AF",
     fontSize: 16,
   },
-
   card: {
     backgroundColor: "#FFF",
     borderRadius: 10,
@@ -63,42 +199,174 @@ export default StyleSheet.create({
     alignItems: "center",
     elevation: 2,
   },
-
   taskArea: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     flex: 1,
   },
-
   checkbox: {
     width: 24,
     height: 24,
     borderWidth: 2,
     borderColor: "#3B82F6",
     borderRadius: 6,
-    marginRight: 15,
+    marginRight: 12,
+    marginTop: 4,
   },
-
   checkboxChecked: {
     backgroundColor: "#3B82F6",
   },
-
+  taskContent: {
+    flex: 1,
+  },
   taskText: {
     fontSize: 16,
-    flexShrink: 1,
+    color: "#1F2937",
+    flexWrap: "wrap",
   },
-
   taskCompleted: {
     textDecorationLine: "line-through",
-    color: "#999",
+    color: "#9CA3AF",
   },
-
-  deleteButton: {
-    marginLeft: 15,
+  priorityIcon: {
+    fontSize: 16,
+    marginTop: 2,
   },
-
-  deleteText: {
-    color: "#EF4444",
+  taskDetails: {
+    flexDirection: "row",
+    marginTop: 4,
+    gap: 8,
+  },
+  priorityBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 15,
+  },
+  priorityText: {
+    color: "#FFF",
     fontWeight: "bold",
+    fontSize: 12,
+  },
+  subtaskCount: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  subtaskList: {
+    marginTop: 8,
+    marginLeft: 8,
+  },
+  subtaskItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  subtaskCheckbox: {
+    width: 18,
+    height: 18,
+    borderWidth: 2,
+    borderColor: "#3B82F6",
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  subtaskText: {
+    fontSize: 14,
+    color: "#4B5563",
+    flex: 1,
+  },
+  deleteSubtask: {
+    color: "#EF4444",
+    fontSize: 18,
+    fontWeight: "bold",
+    paddingHorizontal: 8,
+  },
+  addSubtaskContainer: {
+    flexDirection: "row",
+    marginTop: 8,
+    marginLeft: 8,
+  },
+  addSubtaskInput: {
+    flex: 1,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 14,
+    marginRight: 8,
+  },
+  addSubtaskButton: {
+    color: "#3B82F6",
+    fontWeight: "bold",
+    padding: 6,
+  },
+  notesInput: {
+    backgroundColor: "#F3F4F6",
+    borderRadius: 6,
+    padding: 10,
+    marginTop: 8,
+    minHeight: 60,
+    textAlignVertical: "top",
+  },
+  editContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  editInput: {
+    flex: 1,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 16,
+    marginRight: 8,
+  },
+  saveText: {
+    color: "#10B981",
+    fontWeight: "bold",
+    marginRight: 8,
+  },
+  cancelText: {
+    color: "#6B7280",
+    fontWeight: "bold",
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  actionButton: {
+    padding: 8,
+  },
+  actionText: {
+    fontSize: 18,
+  },
+  deleteButton: {
+    padding: 8,
+  },
+  deleteText: {
+    fontSize: 18,
+  },
+  quickActions: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  completeAllButton: {
+    backgroundColor: "#10B981",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  clearButton: {
+    backgroundColor: "#EF4444",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  actionButtonText: {
+    color: "#FFF",
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });
