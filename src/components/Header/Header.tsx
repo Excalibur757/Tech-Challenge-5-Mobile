@@ -2,15 +2,22 @@ import { useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { useRouter } from "expo-router";
-
-import styles from "./Header.styles";
+import { useAccessibility } from "../../context/AccessibilityContext";
+import { useDynamicStyles } from "../../hooks/useDynamicStyles";
+import { createHeaderStyles } from "./Header.styles";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
-
   const router = useRouter();
+  const { colors, settings } = useAccessibility();
+  const dynamicStyles = useDynamicStyles();
+  const styles = createHeaderStyles(colors);
 
   const userName = "João Silva";
+  
+  // Verificar se está em modo de alto contraste
+  const isHighContrast = settings.contrastLevel === "high";
+  const isDarkMode = settings.contrastLevel === "dark";
 
   function navigate(path: "/" | "/home" | "/config" | "/perfil") {
     setOpen(false);
@@ -19,18 +26,33 @@ export default function Header() {
 
   function logout() {
     setOpen(false);
-
-    // Futuramente você limpa o token aqui
-
     router.replace("/");
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.logo}>SeniorEase</Text>
+    <View style={[
+      styles.container,
+      isHighContrast && styles.highContrastContainer,
+      isDarkMode && styles.darkModeContainer
+    ]}>
+      <Text style={[
+        styles.logo,
+        { fontSize: dynamicStyles.title.fontSize },
+        isHighContrast && styles.highContrastText,
+        isDarkMode && styles.darkModeText
+      ]}>
+        SeniorEase
+      </Text>
 
       <View style={styles.rightContainer}>
-        <Text style={styles.user}>{userName}</Text>
+        <Text style={[
+          styles.user,
+          { fontSize: dynamicStyles.text.fontSize },
+          isHighContrast && styles.highContrastText,
+          isDarkMode && styles.darkModeText
+        ]}>
+          {userName}
+        </Text>
 
         <TouchableOpacity
           onPress={() => setOpen(!open)}
@@ -39,38 +61,69 @@ export default function Header() {
           <Ionicons
             name={open ? "chevron-up" : "chevron-down"}
             size={22}
-            color="#333"
+            color={isDarkMode ? "#FFF" : colors.text}
           />
         </TouchableOpacity>
 
         {open && (
-          <View style={styles.dropdown}>
+          <View style={[
+            styles.dropdown,
+            isHighContrast && styles.highContrastDropdown,
+            isDarkMode && styles.darkModeDropdown
+          ]}>
             <TouchableOpacity
               style={styles.item}
               onPress={() => navigate("/home")}
             >
-              <Text style={styles.itemText}>Tela Inicial</Text>
+              <Text style={[
+                styles.itemText,
+                { fontSize: dynamicStyles.text.fontSize },
+                isHighContrast && styles.highContrastText,
+                isDarkMode && styles.darkModeText
+              ]}>
+                Tela Inicial
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.item}
               onPress={() => navigate("/config")}
             >
-              <Text style={styles.itemText}>Configurações</Text>
+              <Text style={[
+                styles.itemText,
+                { fontSize: dynamicStyles.text.fontSize },
+                isHighContrast && styles.highContrastText,
+                isDarkMode && styles.darkModeText
+              ]}>
+                Configurações
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.item}
               onPress={() => navigate("/perfil")}
             >
-              <Text style={styles.itemText}>Perfil</Text>
+              <Text style={[
+                styles.itemText,
+                { fontSize: dynamicStyles.text.fontSize },
+                isHighContrast && styles.highContrastText,
+                isDarkMode && styles.darkModeText
+              ]}>
+                Perfil
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.item}
               onPress={logout}
             >
-              <Text style={[styles.itemText, styles.logout]}>
+              <Text style={[
+                styles.itemText,
+                styles.logout,
+                { fontSize: dynamicStyles.text.fontSize },
+                isHighContrast && styles.highContrastLogout,
+                isDarkMode && styles.darkModeLogout
+              ]}>
                 Sair
               </Text>
             </TouchableOpacity>
