@@ -1,6 +1,6 @@
 // styles/home.styles.ts
 import { StyleSheet } from "react-native";
-import { ColorPalette } from "../app/context/AccessibilityContext";
+import { ColorPalette } from "../context/AccessibilityContext";
 
 export const createHomeStyles = (colors: ColorPalette) => StyleSheet.create({
   container: {

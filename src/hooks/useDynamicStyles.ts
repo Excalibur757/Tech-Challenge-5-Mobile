@@ -1,5 +1,5 @@
 // app/hooks/useDynamicStyles.ts
-import { useAccessibility } from "../app/context/AccessibilityContext";
+import { useAccessibility } from "../context/AccessibilityContext";
 
 export function useDynamicStyles() {
   const { settings, colors } = useAccessibility();

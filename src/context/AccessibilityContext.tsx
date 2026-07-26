@@ -12,86 +12,153 @@ export interface Settings {
   notificationPreference: "reminders" | "notifications" | "both" | "none";
 }
 
-// Cores para cada nível de contraste
+// Cores para cada nível de contraste - ALINHADAS COM O WEB (tons de azul)
 export interface ColorPalette {
+  // Cores de fundo
   background: string;
   backgroundSecondary: string;
+  
+  // Cores de texto
   text: string;
   textSecondary: string;
   textLight: string;
+  
+  // Cores de borda
   border: string;
+  
+  // Cores de cards e componentes
   card: string;
   input: string;
   header: string;
   headerText: string;
+  
+  // Cores de ação
   primary: string;
+  primaryLight: string;
+  primaryDark: string;
   success: string;
   warning: string;
   danger: string;
+  
+  // Utilitários
   shadow: string;
   badge: string;
 }
 
 export const COLOR_PALETTES: Record<Settings["contrastLevel"], ColorPalette> = {
   normal: {
-    background: "#F4F4F4",
-    backgroundSecondary: "#FFFFFF",
-    text: "#1F2937",
-    textSecondary: "#4B5563",
-    textLight: "#6B7280",
-    border: "#E5E7EB",
-    card: "#FFFFFF",
-    input: "#FFFFFF",
-    header: "#3B82F6",
-    headerText: "#FFFFFF",
-    primary: "#3B82F6",
-    success: "#10B981",
-    warning: "#F59E0B",
-    danger: "#EF4444",
+    // Fundos - tons claros
+    background: "#F8FAFC",        // Cinza muito claro (slate-50)
+    backgroundSecondary: "#FFFFFF", // Branco puro
+    
+    // Textos - tons escuros
+    text: "#0F172A",              // Slate-900 (quase preto)
+    textSecondary: "#334155",     // Slate-700
+    textLight: "#64748B",         // Slate-500
+    
+    // Borda - tom suave
+    border: "#CBD5E1",            // Slate-300
+    
+    // Cards e componentes
+    card: "#FFFFFF",              // Branco
+    input: "#FFFFFF",             // Branco
+    header: "#2563EB",            // Azul 600
+    headerText: "#FFFFFF",        // Branco
+    
+    // Ações - tons de azul
+    primary: "#2563EB",           // Azul 600
+    primaryLight: "#DBEAFE",      // Azul 100
+    primaryDark: "#1D4ED8",       // Azul 700
+    success: "#16A34A",           // Verde 600
+    warning: "#F59E0B",           // Amarelo
+    danger: "#DC2626",            // Vermelho 600
+    
+    // Utilitários
     shadow: "#000000",
-    badge: "#EFF6FF",
+    badge: "#EFF6FF",             // Azul 50
   },
+  
   high: {
-    background: "#FFFFFF",
-    backgroundSecondary: "#F8F9FA",
-    text: "#000000",
-    textSecondary: "#1A1A1A",
-    textLight: "#333333",
-    border: "#000000",
-    card: "#FFFFFF",
-    input: "#FFFFFF",
-    header: "#000000",
-    headerText: "#FFFFFF",
-    primary: "#000000",
-    success: "#000000",
-    warning: "#000000",
-    danger: "#000000",
+    // Fundos - alto contraste
+    background: "#FFFFFF",        // Branco puro
+    backgroundSecondary: "#F1F5F9", // Slate-100
+    
+    // Textos - preto para máximo contraste
+    text: "#1a17ca",              // Preto
+    textSecondary: "#1e52a5",     // Slate-800
+    textLight: "#475569",         // Slate-600
+    
+    // Borda - preta para destaque
+    border: "#000000",            // Preto
+    
+    // Cards e componentes
+    card: "#FFFFFF",              // Branco
+    input: "#FFFFFF",             // Branco
+    header: "#000000",            // Preto (máximo contraste)
+    headerText: "#FFFFFF",        // Branco
+    
+    // Ações - azul escuro para contraste
+    primary: "#1E3A8A",           // Azul 900
+    primaryLight: "#DBEAFE",      // Azul 100
+    primaryDark: "#172554",       // Azul 950
+    success: "#000000",           // Preto (alto contraste)
+    warning: "#000000",           // Preto
+    danger: "#000000",            // Preto
+    
+    // Utilitários
     shadow: "#000000",
-    badge: "#F0F0F0",
+    badge: "#F1F5F9",             // Slate-100
   },
+  
   dark: {
-    background: "#1A1A1A",
-    backgroundSecondary: "#2D2D2D",
-    text: "#FFFFFF",
-    textSecondary: "#E5E7EB",
-    textLight: "#9CA3AF",
-    border: "#4A4A4A",
-    card: "#2D2D2D",
-    input: "#3D3D3D",
-    header: "#0D0D0D",
-    headerText: "#FFFFFF",
-    primary: "#3B82F6",
-    success: "#10B981",
-    warning: "#F59E0B",
-    danger: "#EF4444",
+    // Fundos - tons escuros
+    background: "#0F172A",        // Slate-900
+    backgroundSecondary: "#1E293B", // Slate-800
+    
+    // Textos - claros
+    text: "#F8FAFC",              // Slate-50
+    textSecondary: "#CBD5E1",     // Slate-300
+    textLight: "#94A3B8",         // Slate-400
+    
+    // Borda - tom médio
+    border: "#334155",            // Slate-700
+    
+    // Cards e componentes
+    card: "#1E293B",              // Slate-800
+    input: "#334155",             // Slate-700
+    header: "#0F172A",            // Slate-900
+    headerText: "#F8FAFC",        // Slate-50
+    
+    // Ações - azul mais vibrante no dark
+    primary: "#3B82F6",           // Azul 500
+    primaryLight: "#1E3A5F",      // Azul escuro
+    primaryDark: "#2563EB",       // Azul 600
+    success: "#22C55E",           // Verde 500
+    warning: "#EAB308",           // Amarelo 500
+    danger: "#EF4444",            // Vermelho 500
+    
+    // Utilitários
     shadow: "#000000",
-    badge: "#3D3D3D",
+    badge: "#1E293B",             // Slate-800
   },
+};
+
+// Função para aplicar contraste no filter (similar ao web)
+export const getContrastFilter = (level: Settings["contrastLevel"]): string => {
+  switch (level) {
+    case 'high':
+      return 'contrast(1.1)';
+    case 'dark':
+      return 'contrast(1) brightness(0.85)';
+    default:
+      return 'none';
+  }
 };
 
 interface AccessibilityContextType {
   settings: Settings;
   colors: ColorPalette;
+  contrastFilter: string;
   updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
   resetSettings: () => Promise<void>;
   isLoading: boolean;
@@ -140,7 +207,10 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     load();
   }, []);
 
-  // Aplicar cores ao contexto
+  // Aplicar contraste via filter (similar ao web)
+  const contrastFilter = getContrastFilter(settings.contrastLevel);
+  
+  // Obter paleta de cores
   const colors = COLOR_PALETTES[settings.contrastLevel] || COLOR_PALETTES.normal;
 
   // Salvar configurações
@@ -175,6 +245,7 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
   const value = {
     settings,
     colors,
+    contrastFilter,
     updateSettings,
     resetSettings,
     isLoading,

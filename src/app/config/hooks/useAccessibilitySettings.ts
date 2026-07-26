@@ -1,6 +1,6 @@
 // app/configuracoes/hooks/useAccessibilitySettings.ts
 import { useState, useEffect, useCallback } from 'react';
-import { Settings, useAccessibility } from '../../context/AccessibilityContext';
+import { Settings, useAccessibility } from '../../../context/AccessibilityContext';
 
 const DEFAULT_SETTINGS: Settings = {
   fontSize: 16,

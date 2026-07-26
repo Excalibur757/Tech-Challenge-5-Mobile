@@ -1,4 +1,4 @@
-// app/index.tsx (Home - com scroll da tela inteira)
+// app/index.tsx (Home - com confirmação extra do contexto)
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -10,30 +10,14 @@ import {
   ScrollView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useAccessibility } from "../context/AccessibilityContext";
+import { useAccessibility } from "../../context/AccessibilityContext";
 import { useDynamicStyles } from "../../hooks/useDynamicStyles";
 import { createHomeStyles } from "../../styles/home.styles";
-
-interface Task {
-  id: string;
-  text: string;
-  completed: boolean;
-  priority?: "baixa" | "media" | "alta";
-  createdAt: Date;
-  notes?: string;
-  subtasks?: { id: string; text: string; completed: boolean }[];
-}
-
-interface Stats {
-  totalTasks: number;
-  completedTasks: number;
-  activeTasks: number;
-  completionRate: number;
-}
+import { Task } from "../../types/task.types";
+import { Stats } from "../../types/Stats";
 
 const STORAGE_KEY = "@todo_tasks";
 const MODE_KEY = "@todo_mode";
-const CONFIRMATION_KEY = "@todo_confirmation";
 
 export default function TodoScreen() {
   const { settings, colors, isLoading: settingsLoading } = useAccessibility();
@@ -50,7 +34,6 @@ export default function TodoScreen() {
   const [sortBy, setSortBy] = useState<"criado" | "prioridade" | "alfabetica">("criado");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
-  const [extraConfirmation, setExtraConfirmation] = useState(false);
   const [showSubtasks, setShowSubtasks] = useState<string | null>(null);
   const [newSubtask, setNewSubtask] = useState("");
   const [showNotes, setShowNotes] = useState<string | null>(null);
@@ -61,10 +44,9 @@ export default function TodoScreen() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [tasksData, modeData, confirmationData] = await Promise.all([
+        const [tasksData, modeData] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY),
           AsyncStorage.getItem(MODE_KEY),
-          AsyncStorage.getItem(CONFIRMATION_KEY),
         ]);
 
         if (tasksData) {
@@ -77,10 +59,6 @@ export default function TodoScreen() {
 
         if (modeData === "simplificado" || modeData === "completo") {
           setMode(modeData);
-        }
-
-        if (confirmationData) {
-          setExtraConfirmation(JSON.parse(confirmationData));
         }
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
@@ -106,9 +84,9 @@ export default function TodoScreen() {
     }
   }, [mode, isLoading]);
 
-  // Função auxiliar para verificar confirmação
+  // 💡 Função auxiliar para verificar confirmação - usa o settings do contexto
   const shouldConfirm = () => {
-    return extraConfirmation === true;
+    return settings.extraConfirmation === true;
   };
 
   // Adicionar tarefa
@@ -289,15 +267,6 @@ export default function TodoScreen() {
     setMode(prev => prev === "simplificado" ? "completo" : "simplificado");
   };
 
-  // Alternar confirmação extra
-  const toggleExtraConfirmation = () => {
-    setExtraConfirmation(prev => {
-      const newValue = !prev;
-      AsyncStorage.setItem(CONFIRMATION_KEY, JSON.stringify(newValue)).catch(console.error);
-      return newValue;
-    });
-  };
-
   // Calcular estatísticas
   const getStats = (): Stats => {
     const totalTasks = tasks.length;
@@ -370,15 +339,23 @@ export default function TodoScreen() {
         </Text>
       </TouchableOpacity>
 
-      {/* Botão de confirmação extra */}
-      <TouchableOpacity 
-        style={[styles.confirmationButton, extraConfirmation && styles.confirmationActive]}
-        onPress={toggleExtraConfirmation}
+      {/* 💡 Indicador de confirmação extra - agora vem do contexto */}
+      {/* <TouchableOpacity 
+        style={[styles.confirmationButton, settings.extraConfirmation && styles.confirmationActive]}
+        onPress={() => {
+          // Opcional: redirecionar para configurações ou apenas mostrar o status
+          Alert.alert(
+            "Confirmação Extra",
+            settings.extraConfirmation 
+              ? "✅ A confirmação extra está ATIVADA. Você será perguntado antes de excluir ou editar tarefas."
+              : "❌ A confirmação extra está DESATIVADA. As ações serão executadas sem confirmação."
+          );
+        }}
       >
         <Text style={[styles.confirmationButtonText, dynamicStyles.text]}>
-          {extraConfirmation ? "✅ Confirmação Ativada" : "❌ Confirmação Desativada"}
+          {settings.extraConfirmation ? "✅ Confirmação Ativada" : "❌ Confirmação Desativada"}
         </Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {/* Estatísticas - apenas modo completo */}
       {mode === "completo" && (
@@ -558,15 +535,22 @@ export default function TodoScreen() {
                             </TouchableOpacity>
                           )}
                           {item.subtasks && item.subtasks.length > 0 && (
-                            <Text style={[styles.subtaskCount, dynamicStyles.hint]}>
-                              📋 {item.subtasks.filter(s => s.completed).length}/{item.subtasks.length}
-                            </Text>
+                            <TouchableOpacity
+                              onPress={() => setShowSubtasks(showSubtasks === item.id ? null : item.id)}
+                            >
+                              <Text style={[styles.subtaskCount, dynamicStyles.hint]}>
+                                📋 {item.subtasks.filter(s => s.completed).length}/{item.subtasks.length}
+                              </Text>
+                            </TouchableOpacity>
                           )}
                         </View>
                       )}
                       {/* Subtarefas visíveis */}
                       {mode === "completo" && showSubtasks === item.id && item.subtasks && (
-                        <View style={styles.subtaskList}>
+                        <View style={styles.addSubtaskContainer}>
+                          <Text style={[styles.subtaskList, dynamicStyles.label]}>
+                            📋 Subtarefas ({item.subtasks.filter(s => s.completed).length}/{item.subtasks.length})
+                          </Text>
                           {item.subtasks.map((subtask) => (
                             <View key={subtask.id} style={styles.subtaskItem}>
                               <TouchableOpacity
@@ -579,14 +563,15 @@ export default function TodoScreen() {
                               <Text style={[
                                 styles.subtaskText,
                                 subtask.completed && styles.taskCompleted,
-                                dynamicStyles.small
+                                dynamicStyles.text
                               ]}>
                                 {subtask.text}
                               </Text>
                               <TouchableOpacity
                                 onPress={() => deleteSubtask(item.id, subtask.id)}
+                                style={styles.deleteSubtask}
                               >
-                                <Text style={[styles.deleteSubtask, dynamicStyles.text]}>×</Text>
+                                <Text style={[styles.deleteSubtask, dynamicStyles.text]}>✕</Text>
                               </TouchableOpacity>
                             </View>
                           ))}
@@ -597,7 +582,7 @@ export default function TodoScreen() {
                         <View style={styles.addSubtaskContainer}>
                           <View style={styles.addSubtaskWrapper}>
                             <TextInput
-                              placeholder="Digite"
+                              placeholder="➕ Digite sua subtarefa aqui..."
                               placeholderTextColor={colors.textLight}
                               value={newSubtask}
                               onChangeText={setNewSubtask}

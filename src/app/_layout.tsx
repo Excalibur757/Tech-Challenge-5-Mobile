@@ -1,7 +1,7 @@
 // app/_layout.tsx
 import { Stack } from "expo-router";
 import { View, SafeAreaView } from "react-native";
-import { AccessibilityProvider } from "./context/AccessibilityContext";
+import { AccessibilityProvider } from "../context/AccessibilityContext";
 import Header from "../components/Header/Header";
 
 export default function RootLayout() {

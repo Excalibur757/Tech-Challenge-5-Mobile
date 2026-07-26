@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { StyleSheet } from "react-native";
 import Slider from "@react-native-community/slider";
-import { useAccessibility } from "../context/AccessibilityContext";
+import { useAccessibility } from "../../context/AccessibilityContext";
 import { useDynamicStyles } from "../../hooks/useDynamicStyles";
 import { createConfigStyles } from "../../styles/config.styles";
 
