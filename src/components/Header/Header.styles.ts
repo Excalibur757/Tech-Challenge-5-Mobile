@@ -1,72 +1,105 @@
 import { StyleSheet } from "react-native";
+import { ColorPalette } from "../../context/AccessibilityContext";
 
-export default StyleSheet.create({
-  container: {
-    height: 75,
-    backgroundColor: "#FFF",
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#DDD",
+export const createHeaderStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      height: 75,
+      backgroundColor: colors.background || "#FFF",
+      paddingHorizontal: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border || "#DDD",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      elevation: 5,
+      zIndex: 100,
+    },
 
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    // Modo alto contraste
+    highContrastContainer: {
+      backgroundColor: "#000",
+      borderBottomColor: "#FFF",
+      borderBottomWidth: 2,
+    },
 
-    elevation: 5,
-    zIndex: 100,
-  },
+    // Modo escuro
+    darkModeContainer: {
+      backgroundColor: "#1a1a1a",
+      borderBottomColor: "#333",
+    },
 
-  logo: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#2F80ED",
-  },
+    logo: {
+      fontWeight: "bold",
+      color: colors.primary || "#2F80ED",
+    },
 
-  rightContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    position: "relative",
-  },
+    highContrastText: {
+      color: "#FFFFFF",
+    },
 
-  user: {
-    fontSize: 16,
-    marginRight: 8,
-    fontWeight: "600",
-  },
+    darkModeText: {
+      color: "#E0E0E0",
+    },
 
-  button: {
-    padding: 5,
-  },
+    rightContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      position: "relative",
+    },
 
-  dropdown: {
-    position: "absolute",
-    top: 50,
-    right: 0,
+    user: {
+      marginRight: 8,
+      fontWeight: "600",
+      color: colors.text || "#333",
+    },
 
-    width: 190,
+    button: {
+      padding: 5,
+    },
 
-    backgroundColor: "#FFF",
+    dropdown: {
+      position: "absolute",
+      top: 50,
+      right: 0,
+      width: 190,
+      backgroundColor: colors.background || "#FFF",
+      borderRadius: 10,
+      elevation: 8,
+      borderWidth: 1,
+      borderColor: colors.border || "#DDD",
+    },
 
-    borderRadius: 10,
+    highContrastDropdown: {
+      backgroundColor: "#000",
+      borderColor: "#FFF",
+      borderWidth: 2,
+    },
 
-    elevation: 8,
+    darkModeDropdown: {
+      backgroundColor: "#2a2a2a",
+      borderColor: "#444",
+    },
 
-    borderWidth: 1,
-    borderColor: "#DDD",
-  },
+    item: {
+      paddingVertical: 14,
+      paddingHorizontal: 15,
+    },
 
-  item: {
-    paddingVertical: 14,
-    paddingHorizontal: 15,
-  },
+    itemText: {
+      color: colors.text || "#333",
+    },
 
-  itemText: {
-    fontSize: 16,
-    color: "#333",
-  },
+    logout: {
+      color: colors.danger || "#D32F2F",
+      fontWeight: "bold",
+    },
 
-  logout: {
-    color: "#D32F2F",
-    fontWeight: "bold",
-  },
-});
+    highContrastLogout: {
+      color: "#FF4444",
+    },
+
+    darkModeLogout: {
+      color: "#FF6B6B",
+    },
+  });

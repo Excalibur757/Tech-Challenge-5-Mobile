@@ -1,10 +1,8 @@
-import React, { useState } from "react";
 import { View, Text, TouchableOpacity, TextInput } from "react-native";
 import { Task } from "../types/task.types";
 import { ModeType } from "../constants/storageKeys";
 import { PriorityType, PRIORITY_EMOJIS, PRIORITY_LABELS } from "../constants/priorityOptions";
 import { useAccessibility } from "../../../context/AccessibilityContext";
-import { useDynamicStyles } from "../../../hooks/useDynamicStyles";
 import { createHomeStyles } from "../../../styles/home.styles";
 
 interface TaskItemProps {
@@ -207,7 +205,7 @@ export function TaskItem({
                     </TouchableOpacity>
                   </View>
                   <Text style={[styles.addSubtaskHint, dynamicStyles.hint]}>
-                    💡 Digite a subtarefa e pressione "Adicionar" ou Enter
+                    💡 Digite a subtarefa e pressione Adicionar ou Enter
                   </Text>
                 </View>
               )}

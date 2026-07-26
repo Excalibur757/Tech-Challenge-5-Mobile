@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, ScrollView } from "react-native";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import { useDynamicStyles } from "../../hooks/useDynamicStyles";
@@ -17,9 +16,8 @@ export default function Configuracoes() {
   const dynamicStyles = useDynamicStyles();
   const styles = createConfigStyles(colors);
 
-  // O useConfigManager agora aceita o tipo correto
   const configManager = useConfigManager({
-    contextSettings: contextSettings as any, // 👈 Cast temporário se necessário
+    contextSettings: contextSettings as any,
     updateSettings,
     resetSettings,
     refreshSettings,
@@ -28,10 +26,10 @@ export default function Configuracoes() {
   const {
     localSettings,
     hasUnsavedChanges,
-    isDefaultSettings,
+    // isDefaultSettings, // ❌ Removido - não usado
     isSaved,
     showSavedMessage,
-    setShowSavedMessage,
+    // setShowSavedMessage, // ❌ Removido - não usado
     handleFontSizeChange,
     handleLineHeightChange,
     handleLetterSpacingChange,
@@ -54,17 +52,14 @@ export default function Configuracoes() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header */}
       <ConfigHeader 
         styles={styles} 
         isSaved={isSaved} 
         hasUnsavedChanges={hasUnsavedChanges} 
       />
 
-      {/* Mensagem de sucesso */}
       {showSavedMessage && <SuccessMessage styles={styles} />}
 
-      {/* Configurações de Texto */}
       <TextConfig
         styles={styles}
         settings={localSettings}
@@ -74,7 +69,6 @@ export default function Configuracoes() {
         colors={colors}
       />
 
-      {/* Configurações de Experiência */}
       <ExperienceConfig
         styles={styles}
         settings={localSettings}
@@ -82,21 +76,18 @@ export default function Configuracoes() {
         onConfirmationChange={handleExtraConfirmationChange}
       />
 
-      {/* Configurações de Notificação */}
       <NotificationConfig
         styles={styles}
         settings={localSettings}
         onNotificationChange={handleNotificationPreferenceChange}
       />
 
-      {/* Botões de Ação */}
       <ConfigActions
         styles={styles}
         onSave={handleSaveSettings}
         onReset={resetWithConfirmation}
       />
 
-      {/* Status Bar */}
       <ConfigStatus
         styles={styles}
         settings={localSettings}

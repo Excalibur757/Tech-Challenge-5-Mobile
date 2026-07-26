@@ -1,6 +1,4 @@
-import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { useDynamicStyles } from "../../../hooks/useDynamicStyles";
 import { createHomeStyles } from "../../../styles/home.styles";
 
 interface QuickActionsProps {

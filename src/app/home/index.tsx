@@ -1,11 +1,10 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   View,
   Text,
   ScrollView,
   FlatList,
-  TouchableOpacity,
-  Alert,
+  TouchableOpacity
 } from "react-native";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import { useDynamicStyles } from "../../hooks/useDynamicStyles";

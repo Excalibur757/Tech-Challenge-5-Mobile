@@ -1,13 +1,3 @@
-export interface Task {
-  id: string;
-  text: string;
-  completed: boolean;
-  priority?: "baixa" | "media" | "alta";
-  createdAt: Date;
-  notes?: string;
-  subtasks?: { id: string; text: string; completed: boolean }[];
-}
-
 export interface Subtask {
   id: string;
   text: string;

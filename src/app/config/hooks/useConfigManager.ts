@@ -1,17 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Alert } from "react-native";
-import { DEFAULT_SETTINGS } from "../constants/defaultSettings";
-
-// Define o tipo baseado no DEFAULT_SETTINGS
-type SettingsType = {
-  fontSize: number;
-  lineHeight: number;
-  letterSpacing: number;
-  contrastLevel: "normal" | "high" | "dark";
-  navigationMode: "basic" | "advanced";
-  extraConfirmation: boolean;
-  notificationPreference: "reminders" | "notifications" | "both" | "none";
-};
+import { DEFAULT_SETTINGS, SettingsType } from "../constants/defaultSettings";
 
 interface UseConfigManagerProps {
   contextSettings: SettingsType;
@@ -26,23 +15,16 @@ export function useConfigManager({
   resetSettings,
   refreshSettings,
 }: UseConfigManagerProps) {
+  // Estado local
   const [localSettings, setLocalSettings] = useState<SettingsType>(contextSettings);
-  const [initialSettings, setInitialSettings] = useState<SettingsType>(contextSettings);
+  const [initialSettings] = useState<SettingsType>(contextSettings);
   const [isSaved, setIsSaved] = useState(true);
   const [showSavedMessage, setShowSavedMessage] = useState(false);
-
-  // Sincronizar com o contexto
-  useEffect(() => {
-    setLocalSettings(contextSettings);
-    setInitialSettings(contextSettings);
-    setIsSaved(true);
-  }, [contextSettings]);
 
   // Verificar mudanças
   const hasUnsavedChanges = JSON.stringify(localSettings) !== JSON.stringify(initialSettings);
   const isDefaultSettings = JSON.stringify(localSettings) === JSON.stringify(DEFAULT_SETTINGS);
 
-  // Handlers para cada configuração
   const handleFontSizeChange = (value: number) => {
     setLocalSettings(prev => ({ ...prev, fontSize: Math.round(value) }));
     setIsSaved(false);
@@ -80,11 +62,9 @@ export function useConfigManager({
     setIsSaved(false);
   };
 
-  // Salvar configurações
   const handleSaveSettings = async () => {
     try {
       await updateSettings(localSettings);
-      setInitialSettings(localSettings);
       setIsSaved(true);
       setShowSavedMessage(true);
       
@@ -101,7 +81,6 @@ export function useConfigManager({
     }
   };
 
-  // Reset com confirmação
   const resetWithConfirmation = () => {
     Alert.alert(
       "Restaurar Padrões",
@@ -116,7 +95,8 @@ export function useConfigManager({
               await resetSettings();
               await refreshSettings();
               Alert.alert("✅", "Configurações restauradas para os valores padrão!");
-            } catch (error) {
+            } catch (err) {
+              console.error("Erro ao restaurar:", err); // 👈 ADICIONADO: log do erro
               Alert.alert("❌", "Erro ao restaurar configurações.");
             }
           }

@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { createConfigStyles } from "../../../styles/config.styles";
 import { useDynamicStyles } from "../../../hooks/useDynamicStyles";

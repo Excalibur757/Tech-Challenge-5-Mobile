@@ -1,7 +1,6 @@
 import React from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { FilterType, SortType } from "../utils/filterUtils";
-import { useDynamicStyles } from "../../../hooks/useDynamicStyles";
 import { createHomeStyles } from "../../../styles/home.styles";
 import { useAccessibility } from "../../../context/AccessibilityContext";
 

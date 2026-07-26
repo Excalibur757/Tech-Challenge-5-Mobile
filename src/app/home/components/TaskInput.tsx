@@ -1,7 +1,5 @@
-import React from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { PriorityType } from "../constants/priorityOptions";
-import { useDynamicStyles } from "../../../hooks/useDynamicStyles";
 import { createHomeStyles } from "../../../styles/home.styles";
 
 interface TaskInputProps {

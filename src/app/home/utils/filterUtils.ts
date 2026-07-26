@@ -1,5 +1,5 @@
 import { Task } from "../types/task.types";
-import { PriorityType, PRIORITY_ORDER } from "../constants/priorityOptions";
+import { PRIORITY_ORDER } from "../constants/priorityOptions";
 
 export type FilterType = "todas" | "ativas" | "concluidas";
 export type SortType = "criado" | "prioridade" | "alfabetica";
