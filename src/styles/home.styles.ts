@@ -261,7 +261,9 @@ export const createHomeStyles = (colors: ColorPalette) => StyleSheet.create({
   subtaskItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 12,
+    maxWidth: 200,
+    paddingRight: 50,
   },
   subtaskCheckbox: {
     width: 18,
@@ -273,12 +275,11 @@ export const createHomeStyles = (colors: ColorPalette) => StyleSheet.create({
   },
   subtaskText: {
     color: colors.textSecondary,
-    flex: 1,
   },
   deleteSubtask: {
     color: colors.danger,
     fontWeight: "bold",
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
   },
   addSubtaskContainer: {
     marginTop: 12,
@@ -413,6 +414,6 @@ export const createHomeStyles = (colors: ColorPalette) => StyleSheet.create({
 
   listWrapper: {
     flex: 1,
-    minHeight: 200, // Altura mínima para a lista
+    minHeight: 200,
   },
 });

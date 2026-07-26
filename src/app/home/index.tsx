@@ -1,34 +1,50 @@
-// app/index.tsx (Home - com confirmação extra do contexto)
-import React, { useEffect, useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  Alert,
   ScrollView,
+  FlatList,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAccessibility } from "../../context/AccessibilityContext";
 import { useDynamicStyles } from "../../hooks/useDynamicStyles";
 import { createHomeStyles } from "../../styles/home.styles";
-import { Task } from "../../types/task.types";
-import { Stats } from "../../types/Stats";
-
-const STORAGE_KEY = "@todo_tasks";
-const MODE_KEY = "@todo_mode";
+import { useTodoData } from "./hooks/useTodoData";
+import { 
+  addTaskToList,
+  deleteTaskFromList,
+  toggleTaskCompletion,
+  updateTaskText,
+  updateTaskPriority,
+  addSubtaskToTask,
+  toggleSubtaskCompletion,
+  deleteSubtaskFromTask,
+  completeAllTasks,
+  clearCompletedTasks,
+  updateTaskNotes,
+  findTaskById
+} from "./utils/taskUtils";
+import { getFilteredAndSortedTasks } from "./utils/filterUtils";
+import { confirmAction } from "./utils/confirmationUtils";
+import { TaskInput } from "./components/TaskInput";
+import { StatsDisplay } from "./components/StatsDisplay";
+import { FilterControls } from "./components/FilterControls";
+import { TaskItem } from "./components/TaskItem";
+import { QuickActions } from "./components/QuickActions";
+import { PriorityType } from "./constants/priorityOptions";
 
 export default function TodoScreen() {
   const { settings, colors, isLoading: settingsLoading } = useAccessibility();
   const dynamicStyles = useDynamicStyles();
   const styles = createHomeStyles(colors);
 
-  // Estados
-  const [tasks, setTasks] = useState<Task[]>([]);
+  // Estados vindos do hook
+  const { tasks, setTasks, mode, toggleMode, isLoading: dataLoading } = useTodoData();
+
+  // Estados locais
   const [newTask, setNewTask] = useState("");
-  const [newTaskPriority, setNewTaskPriority] = useState<"baixa" | "media" | "alta">("media");
-  const [mode, setMode] = useState<"simplificado" | "completo">("simplificado");
+  const [newTaskPriority, setNewTaskPriority] = useState<PriorityType>("media");
   const [filter, setFilter] = useState<"todas" | "ativas" | "concluidas">("todas");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"criado" | "prioridade" | "alfabetica">("criado");
@@ -38,285 +54,130 @@ export default function TodoScreen() {
   const [newSubtask, setNewSubtask] = useState("");
   const [showNotes, setShowNotes] = useState<string | null>(null);
   const [editingPriority, setEditingPriority] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Carregar dados ao iniciar
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [tasksData, modeData] = await Promise.all([
-          AsyncStorage.getItem(STORAGE_KEY),
-          AsyncStorage.getItem(MODE_KEY),
-        ]);
+  // Verificar se precisa confirmar
+  const needsConfirmation = settings.extraConfirmation === true;
 
-        if (tasksData) {
-          const parsed = JSON.parse(tasksData);
-          setTasks(parsed.map((t: any) => ({
-            ...t,
-            createdAt: new Date(t.createdAt),
-          })));
-        }
-
-        if (modeData === "simplificado" || modeData === "completo") {
-          setMode(modeData);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  // Salvar tarefas
-  useEffect(() => {
-    if (!isLoading) {
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)).catch(console.error);
-    }
-  }, [tasks, isLoading]);
-
-  // Salvar modo
-  useEffect(() => {
-    if (!isLoading) {
-      AsyncStorage.setItem(MODE_KEY, mode).catch(console.error);
-    }
-  }, [mode, isLoading]);
-
-  // 💡 Função auxiliar para verificar confirmação - usa o settings do contexto
-  const shouldConfirm = () => {
-    return settings.extraConfirmation === true;
-  };
-
-  // Adicionar tarefa
-  const addTask = () => {
+  // Handlers das ações
+  const handleAddTask = () => {
     if (newTask.trim() === "") return;
-
-    const task: Task = {
+    setTasks(addTaskToList(tasks, {
       id: Date.now().toString(),
       text: newTask.trim(),
       completed: false,
       createdAt: new Date(),
       priority: newTaskPriority,
       subtasks: [],
-    };
-
-    setTasks([task, ...tasks]);
+    }));
     setNewTask("");
     setNewTaskPriority("media");
   };
 
-  // Excluir tarefa
-  const deleteTask = (id: string) => {
-    const taskName = tasks.find(t => t.id === id)?.text || "esta tarefa";
-
-    if (shouldConfirm()) {
-      Alert.alert(
-        "Confirmar exclusão",
-        `Tem certeza que deseja excluir "${taskName}"?`,
-        [
-          { text: "Cancelar", style: "cancel" },
-          { 
-            text: "Excluir", 
-            style: "destructive",
-            onPress: () => setTasks(prev => prev.filter(task => task.id !== id))
-          }
-        ]
-      );
-    } else {
-      setTasks(prev => prev.filter(task => task.id !== id));
-    }
-  };
-
-  // Alternar status da tarefa
-  const toggleTask = (id: string) => {
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      )
+  const handleDeleteTask = (id: string) => {
+    const taskName = findTaskById(tasks, id)?.text || "esta tarefa";
+    confirmAction(
+      needsConfirmation,
+      "Confirmar exclusão",
+      `Tem certeza que deseja excluir "${taskName}"?`,
+      () => setTasks(deleteTaskFromList(tasks, id)),
+      true
     );
   };
 
-  // Iniciar edição
-  const startEdit = (id: string, text: string) => {
-    if (shouldConfirm()) {
-      Alert.alert(
-        "Confirmar edição",
-        `Deseja editar a tarefa "${text}"?`,
-        [
-          { text: "Cancelar", style: "cancel" },
-          { 
-            text: "Editar",
-            onPress: () => {
-              setEditingId(id);
-              setEditText(text);
-            }
-          }
-        ]
-      );
-    } else {
-      setEditingId(id);
-      setEditText(text);
-    }
+  const handleToggleTask = (id: string) => {
+    setTasks(toggleTaskCompletion(tasks, id));
   };
 
-  // Salvar edição
-  const saveEdit = (id: string) => {
-    if (editText.trim() === "") return;
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === id ? { ...task, text: editText.trim() } : task
-      )
+  const handleStartEdit = (id: string, text: string) => {
+    confirmAction(
+      needsConfirmation,
+      "Confirmar edição",
+      `Deseja editar a tarefa "${text}"?`,
+      () => {
+        setEditingId(id);
+        setEditText(text);
+      }
     );
+  };
+
+  const handleSaveEdit = (id: string, newText: string) => {
+    setTasks(updateTaskText(tasks, id, newText));
     setEditingId(null);
     setEditText("");
   };
 
-  // Cancelar edição
-  const cancelEdit = () => {
+  const handleCancelEdit = () => {
     setEditingId(null);
     setEditText("");
   };
 
-  // Mudar prioridade
-  const changePriority = (id: string, priority: "baixa" | "media" | "alta") => {
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === id ? { ...task, priority } : task
-      )
-    );
+  const handleChangePriority = (id: string, priority: PriorityType) => {
+    setTasks(updateTaskPriority(tasks, id, priority));
     setEditingPriority(null);
   };
 
-  // Adicionar subtarefa
-  const addSubtask = (taskId: string) => {
-    if (newSubtask.trim() === "") return;
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === taskId ? {
-          ...task,
-          subtasks: [
-            ...(task.subtasks || []),
-            { id: Date.now().toString(), text: newSubtask.trim(), completed: false }
-          ]
-        } : task
-      )
-    );
+  const handleAddSubtask = (taskId: string, subtaskText: string) => {
+    setTasks(addSubtaskToTask(tasks, taskId, subtaskText));
     setNewSubtask("");
   };
 
-  // Toggle subtarefa
-  const toggleSubtask = (taskId: string, subtaskId: string) => {
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === taskId ? {
-          ...task,
-          subtasks: task.subtasks?.map(st =>
-            st.id === subtaskId ? { ...st, completed: !st.completed } : st
-          )
-        } : task
-      )
-    );
+  const handleToggleSubtask = (taskId: string, subtaskId: string) => {
+    setTasks(toggleSubtaskCompletion(tasks, taskId, subtaskId));
   };
 
-  // Excluir subtarefa
-  const deleteSubtask = (taskId: string, subtaskId: string) => {
-    const subtask = tasks
-      .find(t => t.id === taskId)
+  const handleDeleteSubtask = (taskId: string, subtaskId: string) => {
+    const subtask = findTaskById(tasks, taskId)
       ?.subtasks?.find(st => st.id === subtaskId);
 
     if (subtask) {
-      if (shouldConfirm()) {
-        Alert.alert(
-          "Confirmar exclusão",
-          `Tem certeza que deseja excluir a subtarefa "${subtask.text}"?`,
-          [
-            { text: "Cancelar", style: "cancel" },
-            {
-              text: "Excluir",
-              style: "destructive",
-              onPress: () => {
-                setTasks(prev =>
-                  prev.map(task =>
-                    task.id === taskId ? {
-                      ...task,
-                      subtasks: task.subtasks?.filter(st => st.id !== subtaskId)
-                    } : task
-                  )
-                );
-              }
-            }
-          ]
-        );
-      } else {
-        setTasks(prev =>
-          prev.map(task =>
-            task.id === taskId ? {
-              ...task,
-              subtasks: task.subtasks?.filter(st => st.id !== subtaskId)
-            } : task
-          )
-        );
-      }
+      confirmAction(
+        needsConfirmation,
+        "Confirmar exclusão",
+        `Tem certeza que deseja excluir a subtarefa "${subtask.text}"?`,
+        () => setTasks(deleteSubtaskFromTask(tasks, taskId, subtaskId)),
+        true
+      );
     }
   };
 
-  // Alternar modo
-  const toggleMode = () => {
-    setMode(prev => prev === "simplificado" ? "completo" : "simplificado");
+  const handleCompleteAll = () => {
+    confirmAction(
+      needsConfirmation,
+      "Confirmar",
+      "Marcar todas as tarefas como concluídas?",
+      () => setTasks(completeAllTasks(tasks))
+    );
+  };
+
+  const handleClearCompleted = () => {
+    confirmAction(
+      needsConfirmation,
+      "Confirmar",
+      "Remover todas as tarefas concluídas?",
+      () => setTasks(clearCompletedTasks(tasks))
+    );
+  };
+
+  const handleUpdateNotes = (taskId: string, notes: string) => {
+    setTasks(updateTaskNotes(tasks, taskId, notes));
   };
 
   // Calcular estatísticas
-  const getStats = (): Stats => {
+  const stats = useMemo(() => {
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter(t => t.completed).length;
     const activeTasks = totalTasks - completedTasks;
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
     return { totalTasks, completedTasks, activeTasks, completionRate };
-  };
-
-  const stats = getStats();
+  }, [tasks]);
 
   // Filtrar e ordenar tarefas
-  const getFilteredTasks = () => {
-    let filtered = tasks;
+  const filteredTasks = useMemo(() => {
+    return getFilteredAndSortedTasks(tasks, filter, searchTerm, sortBy);
+  }, [tasks, filter, searchTerm, sortBy]);
 
-    if (filter === "ativas") {
-      filtered = filtered.filter(t => !t.completed);
-    } else if (filter === "concluidas") {
-      filtered = filtered.filter(t => t.completed);
-    }
-
-    if (searchTerm.trim()) {
-      filtered = filtered.filter(t =>
-        t.text.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    const priorityOrder = { alta: 0, media: 1, baixa: 2 };
-    switch (sortBy) {
-      case "criado":
-        filtered.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-        break;
-      case "prioridade":
-        filtered.sort((a, b) =>
-          (priorityOrder[a.priority || "media"] || 1) -
-          (priorityOrder[b.priority || "media"] || 1)
-        );
-        break;
-      case "alfabetica":
-        filtered.sort((a, b) => a.text.localeCompare(b.text));
-        break;
-    }
-
-    return filtered;
-  };
-
-  const filteredTasks = getFilteredTasks();
-
-  // Renderizar loading
-  if (isLoading || settingsLoading) {
+  // Loading
+  if (dataLoading || settingsLoading) {
     return (
       <View style={styles.container}>
         <Text style={[styles.loadingText, dynamicStyles.text]}>⏳ Carregando...</Text>
@@ -339,118 +200,32 @@ export default function TodoScreen() {
         </Text>
       </TouchableOpacity>
 
-      {/* 💡 Indicador de confirmação extra - agora vem do contexto */}
-      {/* <TouchableOpacity 
-        style={[styles.confirmationButton, settings.extraConfirmation && styles.confirmationActive]}
-        onPress={() => {
-          // Opcional: redirecionar para configurações ou apenas mostrar o status
-          Alert.alert(
-            "Confirmação Extra",
-            settings.extraConfirmation 
-              ? "✅ A confirmação extra está ATIVADA. Você será perguntado antes de excluir ou editar tarefas."
-              : "❌ A confirmação extra está DESATIVADA. As ações serão executadas sem confirmação."
-          );
-        }}
-      >
-        <Text style={[styles.confirmationButtonText, dynamicStyles.text]}>
-          {settings.extraConfirmation ? "✅ Confirmação Ativada" : "❌ Confirmação Desativada"}
-        </Text>
-      </TouchableOpacity> */}
-
       {/* Estatísticas - apenas modo completo */}
-      {mode === "completo" && (
-        <View style={styles.statsContainer}>
-          <Text style={[styles.statsTitle, dynamicStyles.subtitle]}>📊 Estatísticas</Text>
-          <Text style={[styles.statsText, dynamicStyles.text]}>Total: {stats.totalTasks}</Text>
-          <Text style={[styles.statsText, dynamicStyles.text]}>✅ Concluídas: {stats.completedTasks}</Text>
-          <Text style={[styles.statsText, dynamicStyles.text]}>⏳ Pendentes: {stats.activeTasks}</Text>
-          <Text style={[styles.statsText, dynamicStyles.text]}>📈 Progresso: {stats.completionRate}%</Text>
-        </View>
-      )}
+      {mode === "completo" && <StatsDisplay stats={stats} styles={styles} dynamicStyles={dynamicStyles} />}
 
       {/* Input para nova tarefa */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="✏️ Digite sua tarefa..."
-          placeholderTextColor={colors.textLight}
-          value={newTask}
-          onChangeText={setNewTask}
-          style={[styles.input, { fontSize: dynamicStyles.text.fontSize }]}
-          onSubmitEditing={addTask}
-        />
-        <TouchableOpacity style={styles.addButton} onPress={addTask}>
-          <Text style={[styles.addButtonText, { fontSize: dynamicStyles.title.fontSize }]}>+</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Seletor de prioridade */}
-      <View style={styles.prioritySelector}>
-        <Text style={[styles.priorityLabel, dynamicStyles.label]}>Prioridade:</Text>
-        {["baixa", "media", "alta"].map((p) => (
-          <TouchableOpacity
-            key={p}
-            style={[
-              styles.priorityOption,
-              newTaskPriority === p && styles.priorityOptionActive,
-              p === "alta" && styles.highPriority,
-              p === "media" && styles.mediumPriority,
-              p === "baixa" && styles.lowPriority,
-            ]}
-            onPress={() => setNewTaskPriority(p as "baixa" | "media" | "alta")}
-          >
-            <Text style={[styles.priorityOptionText, dynamicStyles.small]}>
-              {p === "alta" && "🔴"} {p === "media" && "🟡"} {p === "baixa" && "🟢"} {p.charAt(0).toUpperCase() + p.slice(1)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <TaskInput
+        newTask={newTask}
+        setNewTask={setNewTask}
+        newTaskPriority={newTaskPriority}
+        setNewTaskPriority={setNewTaskPriority}
+        onAddTask={handleAddTask}
+        styles={styles}
+        dynamicStyles={dynamicStyles}
+      />
 
       {/* Filtros e busca - modo completo */}
       {mode === "completo" && (
-        <View style={styles.filterContainer}>
-          <TextInput
-            placeholder="🔍 Buscar tarefas..."
-            placeholderTextColor={colors.textLight}
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-            style={[styles.searchInput, { fontSize: dynamicStyles.text.fontSize }]}
-          />
-          <View style={styles.filterButtons}>
-            {["todas", "ativas", "concluidas"].map((f) => (
-              <TouchableOpacity
-                key={f}
-                style={[
-                  styles.filterButton,
-                  filter === f && styles.filterButtonActive,
-                ]}
-                onPress={() => setFilter(f as "todas" | "ativas" | "concluidas")}
-              >
-                <Text style={[styles.filterButtonText, dynamicStyles.small]}>
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <View style={styles.sortContainer}>
-            <Text style={[styles.sortLabel, dynamicStyles.label]}>Ordenar:</Text>
-            {["criado", "prioridade", "alfabetica"].map((s) => (
-              <TouchableOpacity
-                key={s}
-                style={[
-                  styles.sortButton,
-                  sortBy === s && styles.sortButtonActive,
-                ]}
-                onPress={() => setSortBy(s as "criado" | "prioridade" | "alfabetica")}
-              >
-                <Text style={[styles.sortButtonText, dynamicStyles.text]}>
-                  {s === "criado" && "📅"}
-                  {s === "prioridade" && "🎯"}
-                  {s === "alfabetica" && "🔤"}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+        <FilterControls
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          filter={filter}
+          setFilter={setFilter}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          styles={styles}
+          dynamicStyles={dynamicStyles}
+        />
       )}
 
       <View style={styles.listWrapper}>
@@ -468,261 +243,45 @@ export default function TodoScreen() {
             </Text>
           }
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <TouchableOpacity
-                style={styles.taskArea}
-                onPress={() => toggleTask(item.id)}
-              >
-                <View
-                  style={[
-                    styles.checkbox,
-                    item.completed && styles.checkboxChecked,
-                  ]}
-                />
-                <View style={styles.taskContent}>
-                  {editingId === item.id ? (
-                    <View style={styles.editContainer}>
-                      <TextInput
-                        value={editText}
-                        onChangeText={setEditText}
-                        style={[styles.editInput, { fontSize: dynamicStyles.text.fontSize }]}
-                        onSubmitEditing={() => saveEdit(item.id)}
-                        autoFocus
-                        placeholderTextColor={colors.textLight}
-                      />
-                      <TouchableOpacity onPress={() => saveEdit(item.id)}>
-                        <Text style={[styles.saveText, dynamicStyles.text]}>Salvar</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={cancelEdit}>
-                        <Text style={[styles.cancelText, dynamicStyles.text]}>Cancelar</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <>
-                      <Text
-                        style={[
-                          styles.taskText,
-                          item.completed && styles.taskCompleted,
-                          dynamicStyles.text
-                        ]}
-                      >
-                        {item.text}
-                      </Text>
-                      {/* Prioridade - modo simplificado */}
-                      {mode === "simplificado" && item.priority && (
-                        <Text style={[styles.priorityIcon, dynamicStyles.text]}>
-                          {item.priority === "alta" && "🔴"}
-                          {item.priority === "media" && "🟡"}
-                          {item.priority === "baixa" && "🟢"}
-                        </Text>
-                      )}
-                      {/* Detalhes - modo completo */}
-                      {mode === "completo" && (
-                        <View style={styles.taskDetails}>
-                          {item.priority && (
-                            <TouchableOpacity
-                              onPress={() => setEditingPriority(item.id)}
-                              style={[
-                                styles.priorityBadge,
-                                item.priority === "alta" && styles.highPriority,
-                                item.priority === "media" && styles.mediumPriority,
-                                item.priority === "baixa" && styles.lowPriority,
-                              ]}
-                            >
-                              <Text style={[styles.priorityText, dynamicStyles.small]}>
-                                {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)}
-                              </Text>
-                            </TouchableOpacity>
-                          )}
-                          {item.subtasks && item.subtasks.length > 0 && (
-                            <TouchableOpacity
-                              onPress={() => setShowSubtasks(showSubtasks === item.id ? null : item.id)}
-                            >
-                              <Text style={[styles.subtaskCount, dynamicStyles.hint]}>
-                                📋 {item.subtasks.filter(s => s.completed).length}/{item.subtasks.length}
-                              </Text>
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      )}
-                      {/* Subtarefas visíveis */}
-                      {mode === "completo" && showSubtasks === item.id && item.subtasks && (
-                        <View style={styles.addSubtaskContainer}>
-                          <Text style={[styles.subtaskList, dynamicStyles.label]}>
-                            📋 Subtarefas ({item.subtasks.filter(s => s.completed).length}/{item.subtasks.length})
-                          </Text>
-                          {item.subtasks.map((subtask) => (
-                            <View key={subtask.id} style={styles.subtaskItem}>
-                              <TouchableOpacity
-                                onPress={() => toggleSubtask(item.id, subtask.id)}
-                                style={[
-                                  styles.subtaskCheckbox,
-                                  subtask.completed && styles.checkboxChecked,
-                                ]}
-                              />
-                              <Text style={[
-                                styles.subtaskText,
-                                subtask.completed && styles.taskCompleted,
-                                dynamicStyles.text
-                              ]}>
-                                {subtask.text}
-                              </Text>
-                              <TouchableOpacity
-                                onPress={() => deleteSubtask(item.id, subtask.id)}
-                                style={styles.deleteSubtask}
-                              >
-                                <Text style={[styles.deleteSubtask, dynamicStyles.text]}>✕</Text>
-                              </TouchableOpacity>
-                            </View>
-                          ))}
-                        </View>
-                      )}
-                      {/* Input para adicionar subtarefa */}
-                      {mode === "completo" && showSubtasks === item.id && (
-                        <View style={styles.addSubtaskContainer}>
-                          <View style={styles.addSubtaskWrapper}>
-                            <TextInput
-                              placeholder="➕ Digite sua subtarefa aqui..."
-                              placeholderTextColor={colors.textLight}
-                              value={newSubtask}
-                              onChangeText={setNewSubtask}
-                              style={[
-                                styles.addSubtaskInput,
-                                { fontSize: dynamicStyles.text.fontSize },
-                              ]}
-                              onSubmitEditing={() => addSubtask(item.id)}
-                              autoFocus
-                            />
-
-                            <TouchableOpacity
-                              style={[
-                                styles.addSubtaskButton,
-                                !newSubtask.trim() && styles.addSubtaskButtonDisabled,
-                              ]}
-                              onPress={() => addSubtask(item.id)}
-                              disabled={!newSubtask.trim()}
-                            >
-                              <Text
-                                style={[
-                                  styles.addSubtaskButtonText,
-                                  dynamicStyles.button,
-                                ]}
-                              >
-                                Adicionar
-                              </Text>
-                            </TouchableOpacity>
-                          </View>
-                          {/* Dica visual */}
-                          <Text style={[styles.addSubtaskHint, dynamicStyles.hint]}>
-                            💡 Digite a subtarefa e pressione "Adicionar" ou Enter
-                          </Text>
-                        </View>
-                      )}
-                      {/* Notas - modo completo */}
-                      {mode === "completo" && showNotes === item.id && (
-                        <TextInput
-                          placeholder="📝 Adicione notas aqui..."
-                          placeholderTextColor={colors.textLight}
-                          value={item.notes || ""}
-                          onChangeText={(text) => {
-                            setTasks(prev =>
-                              prev.map(t =>
-                                t.id === item.id ? { ...t, notes: text } : t
-                              )
-                            );
-                          }}
-                          style={[styles.notesInput, { fontSize: dynamicStyles.text.fontSize }]}
-                          multiline
-                        />
-                      )}
-                    </>
-                  )}
-                </View>
-              </TouchableOpacity>
-
-              <View style={styles.actions}>
-                {mode === "completo" && !editingId && (
-                  <>
-                    <TouchableOpacity
-                      onPress={() => setShowSubtasks(showSubtasks === item.id ? null : item.id)}
-                      style={styles.actionButton}
-                    >
-                      <Text style={[styles.actionText, dynamicStyles.text]}>📋</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => setShowNotes(showNotes === item.id ? null : item.id)}
-                      style={styles.actionButton}
-                    >
-                      <Text style={[styles.actionText, dynamicStyles.text]}>📝</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => startEdit(item.id, item.text)}
-                      style={styles.actionButton}
-                    >
-                      <Text style={[styles.actionText, dynamicStyles.text]}>✏️</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => deleteTask(item.id)}
-                >
-                  <Text style={[styles.deleteText, dynamicStyles.text]}>🗑️</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            <TaskItem
+              task={item}
+              mode={mode}
+              styles={styles}
+              dynamicStyles={dynamicStyles}
+              onToggleTask={handleToggleTask}
+              onDeleteTask={handleDeleteTask}
+              onStartEdit={handleStartEdit}
+              onSaveEdit={handleSaveEdit}
+              onCancelEdit={handleCancelEdit}
+              onChangePriority={handleChangePriority}
+              onAddSubtask={handleAddSubtask}
+              onToggleSubtask={handleToggleSubtask}
+              onDeleteSubtask={handleDeleteSubtask}
+              onUpdateNotes={handleUpdateNotes}
+              editingId={editingId}
+              editText={editText}
+              setEditText={setEditText}
+              showSubtasks={showSubtasks}
+              setShowSubtasks={setShowSubtasks}
+              showNotes={showNotes}
+              setShowNotes={setShowNotes}
+              editingPriority={editingPriority}
+              setEditingPriority={setEditingPriority}
+              newSubtask={newSubtask}
+              setNewSubtask={setNewSubtask}
+            />
           )}
         />
       </View>
 
       {/* Ações rápidas - modo simplificado */}
       {mode === "simplificado" && tasks.length > 0 && (
-        <View style={styles.quickActions}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.completeAllButton]}
-            onPress={() => {
-              if (shouldConfirm()) {
-                Alert.alert(
-                  "Confirmar",
-                  "Marcar todas as tarefas como concluídas?",
-                  [
-                    { text: "Cancelar", style: "cancel" },
-                    {
-                      text: "Confirmar",
-                      onPress: () => setTasks(prev => prev.map(t => ({ ...t, completed: true })))
-                    }
-                  ]
-                );
-              } else {
-                setTasks(prev => prev.map(t => ({ ...t, completed: true })));
-              }
-            }}
-          >
-            <Text style={[styles.actionButtonText, dynamicStyles.button]}>✓ Concluir Todas</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.clearButton]}
-            onPress={() => {
-              if (shouldConfirm()) {
-                Alert.alert(
-                  "Confirmar",
-                  "Remover todas as tarefas concluídas?",
-                  [
-                    { text: "Cancelar", style: "cancel" },
-                    {
-                      text: "Confirmar",
-                      onPress: () => setTasks(prev => prev.filter(t => !t.completed))
-                    }
-                  ]
-                );
-              } else {
-                setTasks(prev => prev.filter(t => !t.completed));
-              }
-            }}
-          >
-            <Text style={[styles.actionButtonText, dynamicStyles.button]}>🗑️ Limpar Concluídas</Text>
-          </TouchableOpacity>
-        </View>
+        <QuickActions
+          onCompleteAll={handleCompleteAll}
+          onClearCompleted={handleClearCompleted}
+          styles={styles}
+          dynamicStyles={dynamicStyles}
+        />
       )}
     </ScrollView>
   );
