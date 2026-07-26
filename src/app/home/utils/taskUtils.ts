@@ -1,4 +1,4 @@
-import { Task } from "../../../types/task.types";
+import { Task } from "../types/task.types";
 import { PriorityType } from "../constants/priorityOptions";
 
 export function createTask(text: string, priority: PriorityType): Task {

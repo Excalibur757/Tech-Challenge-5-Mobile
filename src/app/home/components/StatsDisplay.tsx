@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { Stats } from "../../../types/Stats";
+import { Stats } from "../types/Stats";
 import { useDynamicStyles } from "../../../hooks/useDynamicStyles";
 import { createHomeStyles } from "../../../styles/home.styles";
 

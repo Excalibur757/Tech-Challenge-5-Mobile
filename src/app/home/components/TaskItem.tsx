@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, TextInput } from "react-native";
-import { Task } from "../../../types/task.types";
+import { Task } from "../types/task.types";
 import { ModeType } from "../constants/storageKeys";
 import { PriorityType, PRIORITY_EMOJIS, PRIORITY_LABELS } from "../constants/priorityOptions";
 import { useAccessibility } from "../../../context/AccessibilityContext";

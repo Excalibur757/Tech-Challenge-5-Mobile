@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS, DEFAULT_MODE, ModeType } from "../constants/storageKeys";
-import { Task } from "../../../types/task.types";
+import { Task } from "../types/task.types";
 
 export function useTodoData() {
   const [tasks, setTasks] = useState<Task[]>([]);

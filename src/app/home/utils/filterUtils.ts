@@ -1,4 +1,4 @@
-import { Task } from "../../../types/task.types";
+import { Task } from "../types/task.types";
 import { PriorityType, PRIORITY_ORDER } from "../constants/priorityOptions";
 
 export type FilterType = "todas" | "ativas" | "concluidas";
