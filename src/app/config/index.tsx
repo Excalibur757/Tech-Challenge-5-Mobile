@@ -1,89 +1,97 @@
-// app/configuracoes/index.tsx
+// app/configuracoes/index.tsx (atualizado com cores)
 import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
-  Switch,
   Alert,
+  Dimensions,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StyleSheet } from "react-native";
 import Slider from "@react-native-community/slider";
-import { useRouter } from "expo-router";
+import { useAccessibility } from "../context/AccessibilityContext";
+import { useDynamicStyles } from "../../hooks/useDynamicStyles";
+import { createConfigStyles } from "../../styles/config.styles";
 
-// Tipos
-interface Settings {
-  fontSize: number;
-  lineHeight: number;
-  letterSpacing: number;
-  contrastLevel: "normal" | "high" | "dark";
-  navigationMode: "basic" | "advanced";
-  extraConfirmation: boolean;
-  notificationPreference: "reminders" | "notifications" | "both" | "none";
-}
-
-// Constantes
-const DEFAULT_SETTINGS: Settings = {
-  fontSize: 16,
-  lineHeight: 1.5,
-  letterSpacing: 0,
-  contrastLevel: "normal",
-  navigationMode: "basic",
-  extraConfirmation: false,
-  notificationPreference: "both",
-};
-
-const STORAGE_KEY = "@accessibility_settings";
+const { width } = Dimensions.get("window");
+const isSmallDevice = width < 375;
 
 export default function Configuracoes() {
-  const router = useRouter();
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
-  const [initialSettings, setInitialSettings] = useState<Settings>(DEFAULT_SETTINGS);
-  const [isLoading, setIsLoading] = useState(true);
+  const { settings: contextSettings, colors, updateSettings, resetSettings, isLoading, refreshSettings } = useAccessibility();
+  const dynamicStyles = useDynamicStyles();
+  const styles = createConfigStyles(colors);
+  
+  // Estado local para edição
+  const [localSettings, setLocalSettings] = useState(contextSettings);
+  const [initialSettings, setInitialSettings] = useState(contextSettings);
   const [isSaved, setIsSaved] = useState(true);
   const [showSavedMessage, setShowSavedMessage] = useState(false);
 
-  // Carregar configurações
+  // Sincronizar com o contexto quando ele mudar
   useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const saved = await AsyncStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          setSettings(parsed);
-          setInitialSettings(parsed);
-          setIsSaved(true);
-        } else {
-          setSettings(DEFAULT_SETTINGS);
-          setInitialSettings(DEFAULT_SETTINGS);
-          setIsSaved(true);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar configurações:", error);
-        setSettings(DEFAULT_SETTINGS);
-        setInitialSettings(DEFAULT_SETTINGS);
-        setIsSaved(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadSettings();
-  }, []);
+    setLocalSettings(contextSettings);
+    setInitialSettings(contextSettings);
+    setIsSaved(true);
+  }, [contextSettings]);
 
   // Verificar se há mudanças não salvas
-  const hasUnsavedChanges = JSON.stringify(settings) !== JSON.stringify(initialSettings);
-  const isDefaultSettings = JSON.stringify(settings) === JSON.stringify(DEFAULT_SETTINGS);
+  const hasUnsavedChanges = JSON.stringify(localSettings) !== JSON.stringify(initialSettings);
+  const isDefaultSettings = JSON.stringify(localSettings) === JSON.stringify({
+    fontSize: 16,
+    lineHeight: 1.5,
+    letterSpacing: 0,
+    contrastLevel: "normal",
+    navigationMode: "basic",
+    extraConfirmation: false,
+    notificationPreference: "both",
+  });
+
+  // Handlers
+  const handleFontSizeChange = (value: number) => {
+    setLocalSettings(prev => ({ ...prev, fontSize: Math.round(value) }));
+    setIsSaved(false);
+  };
+
+  const handleLineHeightChange = (value: number) => {
+    setLocalSettings(prev => ({ ...prev, lineHeight: Math.round(value * 10) / 10 }));
+    setIsSaved(false);
+  };
+
+  const handleLetterSpacingChange = (value: number) => {
+    setLocalSettings(prev => ({ ...prev, letterSpacing: Math.round(value * 2) / 2 }));
+    setIsSaved(false);
+  };
+
+  const handleContrastChange = (value: "normal" | "high" | "dark") => {
+    setLocalSettings(prev => ({ ...prev, contrastLevel: value }));
+    setIsSaved(false);
+  };
+
+  const handleNavigationModeChange = (value: "basic" | "advanced") => {
+    setLocalSettings(prev => ({ ...prev, navigationMode: value }));
+    setIsSaved(false);
+  };
+
+  const handleExtraConfirmationChange = (value: boolean) => {
+    setLocalSettings(prev => ({ ...prev, extraConfirmation: value }));
+    setIsSaved(false);
+  };
+
+  const handleNotificationPreferenceChange = (value: "reminders" | "notifications" | "both" | "none") => {
+    setLocalSettings(prev => ({ ...prev, notificationPreference: value }));
+    setIsSaved(false);
+  };
 
   // Salvar configurações
   const handleSaveSettings = async () => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-      setInitialSettings(settings);
+      await updateSettings(localSettings);
+      setInitialSettings(localSettings);
       setIsSaved(true);
       setShowSavedMessage(true);
+      
+      await refreshSettings();
       
       setTimeout(() => {
         setShowSavedMessage(false);
@@ -96,8 +104,8 @@ export default function Configuracoes() {
     }
   };
 
-  // Reset para padrões
-  const resetToDefaults = async () => {
+  // Reset com confirmação
+  const resetWithConfirmation = () => {
     Alert.alert(
       "Restaurar Padrões",
       "Tem certeza que deseja restaurar todas as configurações para os valores padrão?",
@@ -107,59 +115,25 @@ export default function Configuracoes() {
           text: "Restaurar",
           style: "destructive",
           onPress: async () => {
-            setSettings(DEFAULT_SETTINGS);
-            setInitialSettings(DEFAULT_SETTINGS);
-            setIsSaved(true);
-            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SETTINGS));
-            Alert.alert("✅", "Configurações restauradas para os valores padrão!");
+            try {
+              await resetSettings();
+              await refreshSettings();
+              Alert.alert("✅", "Configurações restauradas para os valores padrão!");
+            } catch (error) {
+              Alert.alert("❌", "Erro ao restaurar configurações.");
+            }
           }
         }
       ]
     );
   };
 
-  // Handlers
-  const handleFontSizeChange = (value: number) => {
-    setSettings(prev => ({ ...prev, fontSize: Math.round(value) }));
-    setIsSaved(false);
-  };
-
-  const handleLineHeightChange = (value: number) => {
-    setSettings(prev => ({ ...prev, lineHeight: Math.round(value * 10) / 10 }));
-    setIsSaved(false);
-  };
-
-  const handleLetterSpacingChange = (value: number) => {
-    setSettings(prev => ({ ...prev, letterSpacing: Math.round(value * 2) / 2 }));
-    setIsSaved(false);
-  };
-
-  const handleContrastChange = (value: "normal" | "high" | "dark") => {
-    setSettings(prev => ({ ...prev, contrastLevel: value }));
-    setIsSaved(false);
-  };
-
-  const handleNavigationModeChange = (value: "basic" | "advanced") => {
-    setSettings(prev => ({ ...prev, navigationMode: value }));
-    setIsSaved(false);
-  };
-
-  const handleExtraConfirmationChange = (value: boolean) => {
-    setSettings(prev => ({ ...prev, extraConfirmation: value }));
-    setIsSaved(false);
-  };
-
-  const handleNotificationPreferenceChange = (value: "reminders" | "notifications" | "both" | "none") => {
-    setSettings(prev => ({ ...prev, notificationPreference: value }));
-    setIsSaved(false);
-  };
-
   // Loading
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>⏳ Carregando configurações...</Text>
-        <Text style={styles.loadingSubtext}>💡 Isso pode levar alguns segundos</Text>
+        <Text style={[styles.loadingText, dynamicStyles.text]}>⏳ Carregando configurações...</Text>
+        <Text style={[styles.loadingSubtext, dynamicStyles.hint]}>💡 Isso pode levar alguns segundos</Text>
       </View>
     );
   }
@@ -168,15 +142,15 @@ export default function Configuracoes() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>⚙️ Configurações de Acessibilidade</Text>
-          <Text style={styles.headerSubtitle}>Personalize sua experiência de navegação</Text>
-          <Text style={styles.headerHint}>💡 Todas as configurações são salvas automaticamente</Text>
+        <View style={styles.headerContent}>
+          <Text style={[styles.headerTitle, dynamicStyles.title]}>⚙️ Configurações de Acessibilidade</Text>
+          <Text style={[styles.headerSubtitle, dynamicStyles.subtitle]}>Personalize sua experiência de navegação</Text>
         </View>
         <View style={styles.statusBadge}>
           <Text style={[
             styles.statusText,
-            isSaved && !hasUnsavedChanges ? styles.statusSaved : styles.statusUnsaved
+            isSaved && !hasUnsavedChanges ? styles.statusSaved : styles.statusUnsaved,
+            dynamicStyles.small
           ]}>
             {isSaved && !hasUnsavedChanges ? "✅ Salvo" : "⚠️ Não salvo"}
           </Text>
@@ -186,96 +160,96 @@ export default function Configuracoes() {
       {/* Mensagem de sucesso */}
       {showSavedMessage && (
         <View style={styles.successMessage}>
-          <Text style={styles.successText}>✅ Configurações salvas com sucesso!</Text>
-          <Text style={styles.successSubtext}>💡 As alterações já estão ativas em todas as páginas</Text>
+          <Text style={[styles.successText, dynamicStyles.text]}>✅ Configurações salvas com sucesso!</Text>
+          <Text style={[styles.successSubtext, dynamicStyles.hint]}>💡 As alterações já estão ativas em todas as páginas</Text>
         </View>
       )}
 
       {/* Configurações de Texto */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📝 Personalizar Texto</Text>
+        <Text style={[styles.sectionTitle, dynamicStyles.title]}>📝 Personalizar Texto</Text>
 
         {/* Tamanho da Fonte */}
         <View style={styles.controlGroup}>
           <View style={styles.controlHeader}>
-            <Text style={styles.controlLabel}>Tamanho da Fonte</Text>
-            <Text style={styles.controlValue}>{settings.fontSize}px</Text>
+            <Text style={[styles.controlLabel, dynamicStyles.label]}>Tamanho da Fonte</Text>
+            <Text style={[styles.controlValue, dynamicStyles.value]}>{localSettings.fontSize}px</Text>
           </View>
           <Slider
             minimumValue={12}
             maximumValue={32}
             step={1}
-            value={settings.fontSize}
+            value={localSettings.fontSize}
             onValueChange={handleFontSizeChange}
-            minimumTrackTintColor="#3B82F6"
-            maximumTrackTintColor="#D1D5DB"
-            thumbTintColor="#3B82F6"
+            minimumTrackTintColor={colors.primary}
+            maximumTrackTintColor={colors.border}
+            thumbTintColor={colors.primary}
             style={styles.slider}
           />
           <View style={styles.rangeLabels}>
-            <Text style={styles.rangeLabel}>Menor</Text>
-            <Text style={styles.rangeLabel}>Maior</Text>
+            <Text style={[styles.rangeLabel, dynamicStyles.hint]}>Menor</Text>
+            <Text style={[styles.rangeLabel, dynamicStyles.hint]}>Maior</Text>
           </View>
-          <Text style={styles.controlHint}>💡 Recomendado: 18-22px para melhor leitura</Text>
+          <Text style={[styles.controlHint, dynamicStyles.hint]}>💡 Recomendado: 18-22px para melhor leitura</Text>
         </View>
 
         {/* Espaçamento entre linhas */}
         <View style={styles.controlGroup}>
           <View style={styles.controlHeader}>
-            <Text style={styles.controlLabel}>Espaçamento entre Linhas</Text>
-            <Text style={styles.controlValue}>{settings.lineHeight.toFixed(1)}</Text>
+            <Text style={[styles.controlLabel, dynamicStyles.label]}>Espaçamento entre Linhas</Text>
+            <Text style={[styles.controlValue, dynamicStyles.value]}>{localSettings.lineHeight.toFixed(1)}</Text>
           </View>
           <Slider
             minimumValue={1}
             maximumValue={2.5}
             step={0.1}
-            value={settings.lineHeight}
+            value={localSettings.lineHeight}
             onValueChange={handleLineHeightChange}
-            minimumTrackTintColor="#3B82F6"
-            maximumTrackTintColor="#D1D5DB"
-            thumbTintColor="#3B82F6"
+            minimumTrackTintColor={colors.primary}
+            maximumTrackTintColor={colors.border}
+            thumbTintColor={colors.primary}
             style={styles.slider}
           />
           <View style={styles.rangeLabels}>
-            <Text style={styles.rangeLabel}>Compacto</Text>
-            <Text style={styles.rangeLabel}>Espaçado</Text>
+            <Text style={[styles.rangeLabel, dynamicStyles.hint]}>Compacto</Text>
+            <Text style={[styles.rangeLabel, dynamicStyles.hint]}>Espaçado</Text>
           </View>
-          <Text style={styles.controlHint}>💡 Recomendado: 1.5-2.0 para facilitar a leitura</Text>
+          <Text style={[styles.controlHint, dynamicStyles.hint]}>💡 Recomendado: 1.5-2.0 para facilitar a leitura</Text>
         </View>
 
         {/* Espaçamento entre letras */}
         <View style={styles.controlGroup}>
           <View style={styles.controlHeader}>
-            <Text style={styles.controlLabel}>Espaçamento entre Letras</Text>
-            <Text style={styles.controlValue}>{settings.letterSpacing}px</Text>
+            <Text style={[styles.controlLabel, dynamicStyles.label]}>Espaçamento entre Letras</Text>
+            <Text style={[styles.controlValue, dynamicStyles.value]}>{localSettings.letterSpacing}px</Text>
           </View>
           <Slider
             minimumValue={0}
             maximumValue={5}
             step={0.5}
-            value={settings.letterSpacing}
+            value={localSettings.letterSpacing}
             onValueChange={handleLetterSpacingChange}
-            minimumTrackTintColor="#3B82F6"
-            maximumTrackTintColor="#D1D5DB"
-            thumbTintColor="#3B82F6"
+            minimumTrackTintColor={colors.primary}
+            maximumTrackTintColor={colors.border}
+            thumbTintColor={colors.primary}
             style={styles.slider}
           />
           <View style={styles.rangeLabels}>
-            <Text style={styles.rangeLabel}>Junto</Text>
-            <Text style={styles.rangeLabel}>Separado</Text>
+            <Text style={[styles.rangeLabel, dynamicStyles.hint]}>Junto</Text>
+            <Text style={[styles.rangeLabel, dynamicStyles.hint]}>Separado</Text>
           </View>
-          <Text style={styles.controlHint}>💡 Recomendado: 1-2px para melhor legibilidade</Text>
+          <Text style={[styles.controlHint, dynamicStyles.hint]}>💡 Recomendado: 1-2px para melhor legibilidade</Text>
         </View>
       </View>
 
       {/* Configurações de Experiência */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🎨 Configurações de Experiência</Text>
+        <Text style={[styles.sectionTitle, dynamicStyles.title]}>🎨 Configurações de Experiência</Text>
 
         {/* Contraste */}
         <View style={styles.controlGroup}>
-          <Text style={styles.controlLabel}>Nível de Contraste</Text>
-          <Text style={styles.controlHint}>💡 Escolha o contraste que facilita a leitura para você</Text>
+          <Text style={[styles.controlLabel, dynamicStyles.label]}>Nível de Contraste</Text>
+          <Text style={[styles.controlHint, dynamicStyles.hint]}>💡 Escolha o contraste que facilita a leitura para você</Text>
           <View style={styles.optionsGrid}>
             {[
               { value: "normal", label: "Normal", description: "Cores padrão" },
@@ -286,26 +260,27 @@ export default function Configuracoes() {
                 key={option.value}
                 style={[
                   styles.optionButton,
-                  settings.contrastLevel === option.value && styles.optionActive,
+                  localSettings.contrastLevel === option.value && styles.optionActive,
                 ]}
                 onPress={() => handleContrastChange(option.value as "normal" | "high" | "dark")}
               >
                 <Text style={[
                   styles.optionText,
-                  settings.contrastLevel === option.value && styles.optionTextActive,
+                  localSettings.contrastLevel === option.value && styles.optionTextActive,
+                  dynamicStyles.label
                 ]}>
                   {option.label}
                 </Text>
-                <Text style={styles.optionDescription}>{option.description}</Text>
+                <Text style={[styles.optionDescription, dynamicStyles.hint]}>{option.description}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         {/* Modo de Navegação */}
-        <View style={styles.controlGroup}>
-          <Text style={styles.controlLabel}>Modo de Navegação</Text>
-          <Text style={styles.controlHint}>💡 Escolha entre uma interface mais simples ou com mais recursos</Text>
+        {/* <View style={styles.controlGroup}>
+          <Text style={[styles.controlLabel, dynamicStyles.label]}>Modo de Navegação</Text>
+          <Text style={[styles.controlHint, dynamicStyles.hint]}>💡 Escolha entre uma interface mais simples ou com mais recursos</Text>
           <View style={styles.optionsGrid}>
             {[
               { value: "basic", label: "Básico", description: "Interface simplificada" },
@@ -315,50 +290,51 @@ export default function Configuracoes() {
                 key={option.value}
                 style={[
                   styles.optionButton,
-                  settings.navigationMode === option.value && styles.optionActive,
+                  localSettings.navigationMode === option.value && styles.optionActive,
                 ]}
                 onPress={() => handleNavigationModeChange(option.value as "basic" | "advanced")}
               >
                 <Text style={[
                   styles.optionText,
-                  settings.navigationMode === option.value && styles.optionTextActive,
+                  localSettings.navigationMode === option.value && styles.optionTextActive,
+                  dynamicStyles.label
                 ]}>
                   {option.label}
                 </Text>
-                <Text style={styles.optionDescription}>{option.description}</Text>
+                <Text style={[styles.optionDescription, dynamicStyles.hint]}>{option.description}</Text>
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </View> */}
 
         {/* Confirmação Extra */}
         <View style={styles.controlGroup}>
-          <Text style={styles.controlLabel}>Necessidade de Confirmação Extra</Text>
-          <Text style={styles.controlHint}>💡 Quando ativado, você será perguntado antes de excluir ou editar tarefas</Text>
+          <Text style={[styles.controlLabel, dynamicStyles.label]}>Necessidade de Confirmação Extra</Text>
+          <Text style={[styles.controlHint, dynamicStyles.hint]}>💡 Quando ativado, você será perguntado antes de excluir ou editar tarefas</Text>
           <View style={styles.switchContainer}>
             <TouchableOpacity
               style={[
                 styles.switchOption,
-                settings.extraConfirmation === true && styles.switchOptionActive,
+                localSettings.extraConfirmation === true && styles.switchOptionActive,
               ]}
               onPress={() => handleExtraConfirmationChange(true)}
             >
-              <Text style={styles.switchOptionText}>Sim</Text>
-              <Text style={styles.switchDescription}>Perguntar antes de ações</Text>
+              <Text style={[styles.switchOptionText, dynamicStyles.label]}>Sim</Text>
+              <Text style={[styles.switchDescription, dynamicStyles.hint]}>Perguntar antes de ações</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.switchOption,
-                settings.extraConfirmation === false && styles.switchOptionActive,
+                localSettings.extraConfirmation === false && styles.switchOptionActive,
               ]}
               onPress={() => handleExtraConfirmationChange(false)}
             >
-              <Text style={styles.switchOptionText}>Não</Text>
-              <Text style={styles.switchDescription}>Ações diretas</Text>
+              <Text style={[styles.switchOptionText, dynamicStyles.label]}>Não</Text>
+              <Text style={[styles.switchDescription, dynamicStyles.hint]}>Ações diretas</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.controlStatus}>
-            {settings.extraConfirmation 
+          <Text style={[styles.controlStatus, dynamicStyles.text]}>
+            {localSettings.extraConfirmation 
               ? "✅ Você será perguntado antes de ações importantes" 
               : "❌ Ações serão executadas sem confirmação extra"}
           </Text>
@@ -366,8 +342,8 @@ export default function Configuracoes() {
 
         {/* Preferências de Notificação */}
         <View style={styles.controlGroup}>
-          <Text style={styles.controlLabel}>Lembretes e Notificações</Text>
-          <Text style={styles.controlHint}>💡 Escolha como deseja ser notificado sobre suas tarefas</Text>
+          <Text style={[styles.controlLabel, dynamicStyles.label]}>Lembretes e Notificações</Text>
+          <Text style={[styles.controlHint, dynamicStyles.hint]}>💡 Escolha como deseja ser notificado sobre suas tarefas</Text>
           <View style={styles.optionsGrid}>
             {[
               { value: "reminders", label: "📅 Apenas Lembretes", description: "Receba lembretes" },
@@ -380,18 +356,19 @@ export default function Configuracoes() {
                 style={[
                   styles.optionButton,
                   styles.optionSmall,
-                  settings.notificationPreference === option.value && styles.optionActive,
+                  localSettings.notificationPreference === option.value && styles.optionActive,
                 ]}
                 onPress={() => handleNotificationPreferenceChange(option.value as "reminders" | "notifications" | "both" | "none")}
               >
                 <Text style={[
                   styles.optionText,
                   styles.optionSmallText,
-                  settings.notificationPreference === option.value && styles.optionTextActive,
+                  localSettings.notificationPreference === option.value && styles.optionTextActive,
+                  dynamicStyles.small
                 ]}>
                   {option.label}
                 </Text>
-                <Text style={styles.optionDescription}>{option.description}</Text>
+                <Text style={[styles.optionDescription, dynamicStyles.hint]}>{option.description}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -404,295 +381,29 @@ export default function Configuracoes() {
           style={[styles.actionButton, styles.saveButton]}
           onPress={handleSaveSettings}
         >
-          <Text style={styles.actionButtonText}>💾 Salvar Configurações</Text>
+          <Text style={[styles.actionButtonText, dynamicStyles.button]}>💾 Salvar Configurações</Text>
         </TouchableOpacity>
         
         <TouchableOpacity
           style={[styles.actionButton, styles.resetButton]}
-          onPress={resetToDefaults}
+          onPress={resetWithConfirmation}
         >
-          <Text style={styles.actionButtonText}>↺ Restaurar Padrões</Text>
+          <Text style={[styles.actionButtonText, dynamicStyles.button]}>↺ Restaurar Padrões</Text>
         </TouchableOpacity>
       </View>
 
       {/* Status Bar */}
       <View style={styles.statusBar}>
-        <Text style={styles.statusBarText}>
+        <Text style={[styles.statusBarText, dynamicStyles.text]}>
           📌 Status: {isSaved && !hasUnsavedChanges ? "Configurações salvas" : "Configurações não salvas"}
         </Text>
-        <Text style={styles.statusBarText}>
+        <Text style={[styles.statusBarText, dynamicStyles.text]}>
           🔄 {isDefaultSettings ? "Configurações padrão" : "Configurações personalizadas"}
         </Text>
-        <Text style={styles.statusBarHint}>
+        <Text style={[styles.statusBarHint, dynamicStyles.hint]}>
           💾 As preferências serão mantidas por 1 ano após salvar
         </Text>
       </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F4F4F4",
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: "#F4F4F4",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  loadingText: {
-    fontSize: 18,
-    color: "#4B5563",
-    marginBottom: 8,
-  },
-  loadingSubtext: {
-    fontSize: 14,
-    color: "#9CA3AF",
-  },
-  header: {
-    backgroundColor: "#3B82F6",
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#FFF",
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: "#E0E7FF",
-    marginBottom: 4,
-  },
-  headerHint: {
-    fontSize: 12,
-    color: "#BFDBFE",
-    opacity: 0.9,
-  },
-  statusBadge: {
-    backgroundColor: "rgba(255,255,255,0.2)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  statusSaved: {
-    color: "#86EFAC",
-  },
-  statusUnsaved: {
-    color: "#FCD34D",
-  },
-  successMessage: {
-    backgroundColor: "#D1FAE5",
-    borderWidth: 1,
-    borderColor: "#6EE7B7",
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 20,
-  },
-  successText: {
-    color: "#065F46",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  successSubtext: {
-    color: "#047857",
-    fontSize: 12,
-    marginTop: 4,
-  },
-  section: {
-    backgroundColor: "#FFF",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#1F2937",
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    paddingBottom: 12,
-  },
-  controlGroup: {
-    marginBottom: 24,
-  },
-  controlHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  controlLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  controlValue: {
-    fontSize: 14,
-    backgroundColor: "#EFF6FF",
-    color: "#3B82F6",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    fontWeight: "bold",
-  },
-  controlHint: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginTop: 8,
-  },
-  controlStatus: {
-    fontSize: 14,
-    color: "#4B5563",
-    marginTop: 12,
-    padding: 10,
-    backgroundColor: "#F3F4F6",
-    borderRadius: 8,
-  },
-  slider: {
-    width: "100%",
-    height: 40,
-  },
-  rangeLabels: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 4,
-    marginTop: -8,
-  },
-  rangeLabel: {
-    fontSize: 12,
-    color: "#6B7280",
-  },
-  optionsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 8,
-  },
-  optionButton: {
-    flex: 1,
-    minWidth: "30%",
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#FFF",
-    alignItems: "center",
-  },
-  optionSmall: {
-    minWidth: "45%",
-  },
-  optionActive: {
-    borderColor: "#3B82F6",
-    backgroundColor: "#EFF6FF",
-  },
-  optionText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#4B5563",
-  },
-  optionSmallText: {
-    fontSize: 12,
-  },
-  optionTextActive: {
-    color: "#3B82F6",
-  },
-  optionDescription: {
-    fontSize: 10,
-    color: "#6B7280",
-    marginTop: 2,
-    textAlign: "center",
-  },
-  switchContainer: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
-  },
-  switchOption: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#FFF",
-    alignItems: "center",
-  },
-  switchOptionActive: {
-    borderColor: "#3B82F6",
-    backgroundColor: "#EFF6FF",
-  },
-  switchOptionText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#4B5563",
-  },
-  switchDescription: {
-    fontSize: 10,
-    color: "#6B7280",
-    marginTop: 2,
-  },
-  actionButtons: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 12,
-    marginBottom: 20,
-  },
-  actionButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    minWidth: "45%",
-    alignItems: "center",
-  },
-  saveButton: {
-    backgroundColor: "#3B82F6",
-  },
-  resetButton: {
-    backgroundColor: "#6B7280",
-  },
-  actionButtonText: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  statusBar: {
-    backgroundColor: "#FFF",
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 30,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  statusBarText: {
-    fontSize: 13,
-    color: "#4B5563",
-    marginBottom: 4,
-  },
-  statusBarHint: {
-    fontSize: 11,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-});
