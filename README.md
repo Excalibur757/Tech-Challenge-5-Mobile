@@ -1,6 +1,6 @@
 <h1 align="center">
-  <a href="https://github.com/SEU_USUARIO/SEU_REPOSITORIO">
-    Tech Challenge - Fase 05
+  <a href="https://github.com/Excalibur757/Tech-Challenge-5-Mobile">
+    Tech Challenge - Fase 05 (Mobile)
   </a>
 </h1>
 
@@ -190,11 +190,10 @@ Depois:
 
 # 🎥 Vídeo
 
-Gravamos um vídeo demonstrando o funcionamento completo do aplicativo.
+Gravamos um vídeo para demonstrar todo o fluxo e as funcionalidades da aplicação.
 
-➡️ Assista ao vídeo via Drive: LINK_AQUI
-
-➡️ Assista ao vídeo via YouTube: LINK_AQUI
+➡️ [Assista ao vídeo via Drive](https://drive.google.com/file/d/SEU_LINK_AQUI/view?usp=sharing).
+➡️ [Assista ao vídeo via YouTube](https://youtu.be/SEU_LINK_AQUI).
 
 <br />
 
