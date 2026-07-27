@@ -5,6 +5,8 @@ type User = {
   id: string;
   name: string;
   username: string;
+  email?: string;
+  phone?: string;
   password: string;
   createdAt: string;
 };
@@ -15,7 +17,7 @@ type AuthContextType = {
   isLoading: boolean;
   signIn: (username: string, password: string) => Promise<boolean>;
   signUp: (name: string, username: string, password: string) => Promise<boolean>;
-  updateProfile: (updates: Partial<Pick<User, "name" | "username" | "password">>) => Promise<boolean>;
+  updateProfile: (updates: Partial<Pick<User, "name" | "username" | "password" | "email" | "phone">>) => Promise<boolean>;
   signOut: () => Promise<void>;
 };
 
@@ -90,6 +92,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: Date.now().toString(),
         name: name.trim(),
         username: username.trim().toLowerCase(),
+        email: "",
+        phone: "",
         password,
         createdAt: new Date().toISOString(),
       };
@@ -105,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateProfile = async (updates: Partial<Pick<User, "name" | "username" | "password">>) => {
+  const updateProfile = async (updates: Partial<Pick<User, "name" | "username" | "password" | "email" | "phone">>) => {
     if (!user) {
       return false;
     }
@@ -117,6 +121,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const normalizedName = updates.name?.trim() ?? user.name;
       const normalizedUsername = (updates.username?.trim() ?? user.username).toLowerCase();
       const normalizedPassword = updates.password ?? user.password;
+      const normalizedEmail = updates.email?.trim() ?? user.email ?? "";
+      const normalizedPhone = updates.phone?.trim() ?? user.phone ?? "";
 
       if (!normalizedName || !normalizedUsername || !normalizedPassword) {
         return false;
@@ -134,6 +140,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...user,
         name: normalizedName,
         username: normalizedUsername,
+        email: normalizedEmail,
+        phone: normalizedPhone,
         password: normalizedPassword,
       };
 

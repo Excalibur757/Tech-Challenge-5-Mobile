@@ -16,6 +16,8 @@ type ProfileFormData = {
   name: string;
   username: string;
   password: string;
+  phone: string;
+  email: string;
 };
 
 export default function PerfilScreen() {
@@ -24,11 +26,15 @@ export default function PerfilScreen() {
   const [formData, setFormData] = useState<ProfileFormData>({
     name: "",
     username: "",
+    email: "",
+    phone: "",
     password: "",
   });
   const [originalData, setOriginalData] = useState<ProfileFormData>({
     name: "",
     username: "",
+    email: "",
+    phone: "",
     password: "",
   });
   const [wantChangePassword, setWantChangePassword] = useState(false);
@@ -42,6 +48,8 @@ export default function PerfilScreen() {
       const nextData = {
         name: user.name,
         username: user.username,
+        email: user.email ?? "",
+        phone: user.phone ?? "",
         password: user.password,
       };
       setFormData(nextData);
@@ -79,9 +87,11 @@ export default function PerfilScreen() {
     }
 
     setIsSaving(true);
-    const updates: Partial<Pick<ProfileFormData, "name" | "username" | "password">> = {
+    const updates: Partial<Pick<ProfileFormData, "name" | "username" | "password" | "email" | "phone">> = {
       name: formData.name,
       username: formData.username,
+      email: formData.email,
+      phone: formData.phone,
     };
 
     if (wantChangePassword) {
@@ -95,6 +105,8 @@ export default function PerfilScreen() {
       setOriginalData({
         name: formData.name,
         username: formData.username,
+        email: formData.email,
+        phone: formData.phone,
         password: wantChangePassword ? formData.password : user.password,
       });
       setCurrentPassword("");
@@ -116,7 +128,10 @@ export default function PerfilScreen() {
   const hasChanges =
     formData.name !== originalData.name ||
     formData.username !== originalData.username ||
-    (wantChangePassword && formData.password !== originalData.password);
+    formData.email !== originalData.email ||
+    formData.phone !== originalData.phone ||
+    (wantChangePassword &&
+        formData.password !== originalData.password);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -169,6 +184,32 @@ export default function PerfilScreen() {
             autoCapitalize="none"
           />
         </View>
+
+        <View style={styles.inputGroup}>
+        <Text style={styles.label}>Celular (opcional)</Text>
+        <TextInput
+            style={styles.input}
+            value={formData.phone}
+            onChangeText={(value) => handleFieldChange("phone", value)}
+            placeholder="(11) 99999-9999"
+            placeholderTextColor="#B8BDC7"
+            keyboardType="phone-pad"
+        />
+        </View>
+
+        <View style={styles.inputGroup}>
+            <Text style={styles.label}>E-mail (opcional)</Text>
+            <TextInput
+                style={styles.input}
+                value={formData.email}
+                onChangeText={(value) => handleFieldChange("email", value)}
+                placeholder="Digite seu e-mail"
+                placeholderTextColor="#B8BDC7"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+            />
+            </View> 
       </View>
 
       <View style={styles.card}>
