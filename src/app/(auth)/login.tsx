@@ -13,7 +13,7 @@ import { Link, useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import BackgroundContainer from "../../components/Background/BackgroundContainer";
 
-// ✅ Usando import em vez de require
+// @ts-ignore
 import loginBackgroundImage from "../../../assets/images/capaLogin.png";
 
 export default function LoginScreen() {
