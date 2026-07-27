@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -30,7 +30,7 @@ export default function PerfilScreen() {
   const router = useRouter();
   const { user, updateProfile } = useAuth();
   
-  // ✅ Inicialização com os dados do user se disponível
+  // ✅ Estado inicial com os dados do user
   const [state, setState] = useState<ProfileState>(() => {
     if (user) {
       const nextData = {
@@ -57,27 +57,32 @@ export default function PerfilScreen() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [showSavedMessage, setShowSavedMessage] = useState(false);
-  
-  const isFirstRender = useRef(true);
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-
     if (user) {
       const nextData = {
         name: user.name,
         username: user.username,
         password: user.password,
       };
-      setState({
-        formData: nextData,
-        originalData: nextData,
-        currentPassword: "",
-        passwordError: "",
-        wantChangePassword: false
+
+      setState(prevState => {
+        const isSameData = 
+          prevState.formData.name === nextData.name &&
+          prevState.formData.username === nextData.username &&
+          prevState.formData.password === nextData.password;
+        
+        if (isSameData) {
+          return prevState;
+        }
+        
+        return {
+          formData: nextData,
+          originalData: nextData,
+          currentPassword: "",
+          passwordError: "",
+          wantChangePassword: false
+        };
       });
     }
   }, [user]);
