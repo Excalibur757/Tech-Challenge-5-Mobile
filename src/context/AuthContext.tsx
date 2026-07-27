@@ -6,6 +6,8 @@ type User = {
   name: string;
   username: string;
   password: string;
+  email?: string;
+  phone?: string;
   createdAt: string;
 };
 
@@ -15,7 +17,7 @@ type AuthContextType = {
   isLoading: boolean;
   signIn: (username: string, password: string) => Promise<boolean>;
   signUp: (name: string, username: string, password: string) => Promise<boolean>;
-  updateProfile: (updates: Partial<Pick<User, "name" | "username" | "password">>) => Promise<boolean>;
+  updateProfile: (updates: Partial<Pick<User, "name" | "username" | "password" | "email" | "phone">>) => Promise<boolean>;
   signOut: () => Promise<void>;
 };
 
@@ -93,6 +95,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name: name.trim(),
         username: username.trim().toLowerCase(),
         password,
+        email: "",
+        phone: "",
         createdAt: new Date().toISOString(),
       };
 
@@ -108,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ✅ Envolvendo com useCallback para evitar recriação desnecessária
-  const updateProfile = useCallback(async (updates: Partial<Pick<User, "name" | "username" | "password">>) => {
+  const updateProfile = useCallback(async (updates: Partial<Pick<User, "name" | "username" | "password" | "email" | "phone">>) => {
     if (!user) {
       return false;
     }
@@ -120,6 +124,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const normalizedName = updates.name?.trim() ?? user.name;
       const normalizedUsername = (updates.username?.trim() ?? user.username).toLowerCase();
       const normalizedPassword = updates.password ?? user.password;
+      const normalizedEmail = updates.email?.trim() ?? user.email ?? "";
+      const normalizedPhone = updates.phone?.trim() ?? user.phone ?? "";
 
       if (!normalizedName || !normalizedUsername || !normalizedPassword) {
         return false;
@@ -138,6 +144,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name: normalizedName,
         username: normalizedUsername,
         password: normalizedPassword,
+        email: normalizedEmail,
+        phone: normalizedPhone,
       };
 
       const nextUsers = users.map((item) => (item.id === user.id ? updatedUser : item));
