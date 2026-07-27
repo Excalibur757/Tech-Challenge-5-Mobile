@@ -15,6 +15,7 @@ type AuthContextType = {
   isLoading: boolean;
   signIn: (username: string, password: string) => Promise<boolean>;
   signUp: (name: string, username: string, password: string) => Promise<boolean>;
+  updateProfile: (updates: Partial<Pick<User, "name" | "username" | "password">>) => Promise<boolean>;
   signOut: () => Promise<void>;
 };
 
@@ -104,6 +105,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateProfile = async (updates: Partial<Pick<User, "name" | "username" | "password">>) => {
+    if (!user) {
+      return false;
+    }
+
+    try {
+      const storedUsers = await AsyncStorage.getItem(USERS_STORAGE_KEY);
+      const users: User[] = storedUsers ? JSON.parse(storedUsers) : [];
+
+      const normalizedName = updates.name?.trim() ?? user.name;
+      const normalizedUsername = (updates.username?.trim() ?? user.username).toLowerCase();
+      const normalizedPassword = updates.password ?? user.password;
+
+      if (!normalizedName || !normalizedUsername || !normalizedPassword) {
+        return false;
+      }
+
+      const duplicate = users.some(
+        (item) => item.id !== user.id && item.username.toLowerCase() === normalizedUsername
+      );
+
+      if (duplicate) {
+        return false;
+      }
+
+      const updatedUser: User = {
+        ...user,
+        name: normalizedName,
+        username: normalizedUsername,
+        password: normalizedPassword,
+      };
+
+      const nextUsers = users.map((item) => (item.id === user.id ? updatedUser : item));
+      await AsyncStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(nextUsers));
+      await AsyncStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      return true;
+    } catch (error) {
+      console.warn("Erro ao atualizar perfil", error);
+      return false;
+    }
+  };
+
   const signOut = async () => {
     try {
       await AsyncStorage.removeItem(CURRENT_USER_STORAGE_KEY);
@@ -120,6 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       signIn,
       signUp,
+      updateProfile,
       signOut,
     }),
     [user, isLoading]
