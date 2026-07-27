@@ -1,56 +1,211 @@
-# Welcome to your Expo app 👋
+<h1 align="center">
+  <a href="https://github.com/Excalibur757/Tech-Challenge-5-Mobile">
+    Tech Challenge - Fase 05 (Mobile)
+  </a>
+</h1>
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+<p align="center">
+  Aplicativo mobile desenvolvido para auxiliar idosos na utilização de smartphones, oferecendo uma interface simples, acessível e intuitiva utilizando <strong>React Native</strong>, <strong>Expo</strong> e <strong>TypeScript</strong>.
+</p>
 
-## Get started
+<br />
 
-1. Install dependencies
+## 📖 Índice
 
-   ```bash
-   npm install
-   ```
+- 🎯 Sobre o Projeto
+- ✨ Funcionalidades
+- ♿ Acessibilidade
+- 📱 Interface
+- 🛠️ Tecnologias Utilizadas
+- 🚀 Executando o Projeto
+- 🎥 Vídeo
 
-2. Start the app
+<br />
 
-   ```bash
-   npx expo start
-   ```
+# 🎯 Sobre o Projeto
 
-In the output, you'll find options to open the app in a
+O **Senior Ease** é um aplicativo mobile desenvolvido com o objetivo de facilitar o uso de smartphones por pessoas idosas, oferecendo uma experiência simples, intuitiva e acessível.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+A aplicação foi construída priorizando facilidade de navegação, telas organizadas e recursos que permitam ao usuário utilizar as principais funcionalidades sem dificuldades.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Entre os recursos disponíveis estão:
 
-## Get a fresh project
+- Cadastro e autenticação de usuários
+- Gerenciamento do perfil
+- Personalização das informações do usuário
+- Interface limpa e intuitiva
+- Persistência dos dados localmente
+- Navegação simplificada entre as telas
 
-When you're ready, run:
+Todo o desenvolvimento foi realizado com foco em acessibilidade, usabilidade e experiência do usuário.
+
+<br />
+
+# ✨ Funcionalidades
+
+- **Cadastro de Usuário:** Criação de conta com nome, usuário e senha.
+
+- **Login:** Autenticação utilizando usuário e senha cadastrados.
+
+- **Perfil do Usuário:** Alteração de nome, usuário, senha, e informações opcionais como e-mail e telefone.
+
+- **Validação de Dados:** Verificação de usuários duplicados e confirmação da senha atual antes da alteração da senha.
+
+- **Persistência Local:** Os dados permanecem armazenados mesmo após fechar o aplicativo.
+
+- **Interface Responsiva:** Layout desenvolvido para diferentes tamanhos de dispositivos móveis.
+
+<br />
+
+# ♿ Acessibilidade
+
+O aplicativo foi desenvolvido pensando na experiência de usuários idosos, oferecendo:
+
+- Interface limpa e organizada
+- Botões grandes e de fácil interação
+- Navegação intuitiva
+- Textos legíveis
+- Fluxos simplificados
+- Feedback visual durante ações importantes
+- Mensagens claras para erros e sucessos
+
+<br />
+
+# 📱 Interface
+
+A aplicação foi desenvolvida para dispositivos Android e iOS através do Expo.
+
+As principais telas incluem:
+
+- Login
+- Cadastro
+- Tela Inicial
+- Perfil do Usuário
+- Configurações (caso existam)
+- Demais funcionalidades do aplicativo
+
+<br />
+
+# 🛠️ Tecnologias Utilizadas
+
+Este projeto foi desenvolvido utilizando:
+
+- **React Native**
+- **Expo**
+- **TypeScript**
+- **Expo Router**
+- **React Context API**
+- **AsyncStorage**
+- **React Hooks**
+- **ESLint**
+
+<br />
+
+# 🚀 Executando o Projeto
+
+## 📋 Pré-requisitos
+
+- Node.js 18+
+- npm ou yarn
+- Expo Go (Android/iOS) ou Emulador Android/iOS
+
+<br />
+
+## 📥 Instalação
+
+### 1. Clone o repositório
 
 ```bash
-npm run reset-project
+git clone https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Entre na pasta
 
-### Other setup steps
+```bash
+cd Tech-Challenge-5-Mobile
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+### 3. Instale as dependências
 
-## Learn more
+```bash
+npm install
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+<br />
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+# ▶️ Executando a aplicação
 
-## Join the community
+Inicie o projeto com:
 
-Join our community of developers creating universal apps.
+```bash
+npx expo start
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+ou
+
+```bash
+npm start
+```
+
+Depois:
+
+- pressione **a** para abrir no Android;
+- pressione **i** para abrir no iOS (macOS);
+- ou escaneie o QR Code utilizando o aplicativo **Expo Go**.
+
+<br />
+
+# 📋 Funcionalidades Detalhadas
+
+### Autenticação
+
+- ✅ Cadastro de usuário
+- ✅ Login
+- ✅ Logout
+- ✅ Persistência da sessão
+
+### Perfil
+
+- ✅ Alteração do nome
+- ✅ Alteração do usuário
+- ✅ Alteração da senha
+- ✅ Cadastro de e-mail (opcional)
+- ✅ Cadastro de telefone (opcional)
+- ✅ Validação da senha atual
+- ✅ Restaurar alterações
+
+### Persistência
+
+- ✅ Dados armazenados utilizando AsyncStorage
+- ✅ Sessão mantida entre execuções
+
+### Interface
+
+- ✅ Navegação utilizando Expo Router
+- ✅ Feedback visual de carregamento
+- ✅ Mensagens de sucesso
+- ✅ Mensagens de erro
+
+<br />
+
+# 🎥 Vídeo
+
+Gravamos um vídeo para demonstrar todo o fluxo e as funcionalidades da aplicação.
+
+➡️ [Assista ao vídeo via Drive](https://drive.google.com/file/d/SEU_LINK_AQUI/view?usp=sharing).
+➡️ [Assista ao vídeo via YouTube](https://youtu.be/SEU_LINK_AQUI).
+
+<br />
+
+# 👥 Time de Desenvolvimento
+
+- **Kevin Santos** - https://github.com/Excalibur757
+- **Pedro Henrique** - https://github.com/Pedenrrique
+
+<br />
+
+---
+
+<p align="center">
+  Feito por <strong>Kevin Santos (RM369050)</strong> & <strong>Pedro Henrique (RM367447)</strong>.
+</p>
