@@ -18,22 +18,26 @@ type ProfileFormData = {
   password: string;
 };
 
+type ProfileState = {
+  formData: ProfileFormData;
+  originalData: ProfileFormData;
+  currentPassword: string;
+  passwordError: string;
+  wantChangePassword: boolean;
+};
+
 export default function PerfilScreen() {
   const router = useRouter();
   const { user, updateProfile } = useAuth();
-  const [formData, setFormData] = useState<ProfileFormData>({
-    name: "",
-    username: "",
-    password: "",
+  
+  const [state, setState] = useState<ProfileState>({
+    formData: { name: "", username: "", password: "" },
+    originalData: { name: "", username: "", password: "" },
+    currentPassword: "",
+    passwordError: "",
+    wantChangePassword: false
   });
-  const [originalData, setOriginalData] = useState<ProfileFormData>({
-    name: "",
-    username: "",
-    password: "",
-  });
-  const [wantChangePassword, setWantChangePassword] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+
   const [isSaving, setIsSaving] = useState(false);
   const [showSavedMessage, setShowSavedMessage] = useState(false);
 
@@ -44,11 +48,13 @@ export default function PerfilScreen() {
         username: user.username,
         password: user.password,
       };
-      setFormData(nextData);
-      setOriginalData(nextData);
-      setCurrentPassword("");
-      setPasswordError("");
-      setWantChangePassword(false);
+      setState({
+        formData: nextData,
+        originalData: nextData,
+        currentPassword: "",
+        passwordError: "",
+        wantChangePassword: false
+      });
     }
   }, [user]);
 
@@ -62,10 +68,11 @@ export default function PerfilScreen() {
   }, [showSavedMessage]);
 
   const handleFieldChange = (field: keyof ProfileFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (field === "password") {
-      setPasswordError("");
-    }
+    setState(prev => ({
+      ...prev,
+      formData: { ...prev.formData, [field]: value },
+      passwordError: field === "password" ? "" : prev.passwordError
+    }));
   };
 
   const handleSave = async () => {
@@ -73,32 +80,35 @@ export default function PerfilScreen() {
       return;
     }
 
-    if (wantChangePassword && currentPassword !== user.password) {
-      setPasswordError("A senha atual informada não confere.");
+    if (state.wantChangePassword && state.currentPassword !== user.password) {
+      setState(prev => ({ ...prev, passwordError: "A senha atual informada não confere." }));
       return;
     }
 
     setIsSaving(true);
     const updates: Partial<Pick<ProfileFormData, "name" | "username" | "password">> = {
-      name: formData.name,
-      username: formData.username,
+      name: state.formData.name,
+      username: state.formData.username,
     };
 
-    if (wantChangePassword) {
-      updates.password = formData.password;
+    if (state.wantChangePassword) {
+      updates.password = state.formData.password;
     }
 
     const ok = await updateProfile(updates);
     setIsSaving(false);
 
     if (ok) {
-      setOriginalData({
-        name: formData.name,
-        username: formData.username,
-        password: wantChangePassword ? formData.password : user.password,
-      });
-      setCurrentPassword("");
-      setWantChangePassword(false);
+      setState(prev => ({
+        ...prev,
+        originalData: {
+          name: state.formData.name,
+          username: state.formData.username,
+          password: state.wantChangePassword ? state.formData.password : user.password,
+        },
+        currentPassword: "",
+        wantChangePassword: false
+      }));
       setShowSavedMessage(true);
       Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
     } else {
@@ -107,16 +117,19 @@ export default function PerfilScreen() {
   };
 
   const handleRestore = () => {
-    setFormData(originalData);
-    setCurrentPassword("");
-    setPasswordError("");
-    setWantChangePassword(false);
+    setState(prev => ({
+      ...prev,
+      formData: prev.originalData,
+      currentPassword: "",
+      passwordError: "",
+      wantChangePassword: false
+    }));
   };
 
   const hasChanges =
-    formData.name !== originalData.name ||
-    formData.username !== originalData.username ||
-    (wantChangePassword && formData.password !== originalData.password);
+    state.formData.name !== state.originalData.name ||
+    state.formData.username !== state.originalData.username ||
+    (state.wantChangePassword && state.formData.password !== state.originalData.password);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -153,7 +166,7 @@ export default function PerfilScreen() {
           <Text style={styles.label}>Nome completo</Text>
           <TextInput
             style={styles.input}
-            value={formData.name}
+            value={state.formData.name}
             onChangeText={(value) => handleFieldChange("name", value)}
             placeholder="Digite seu nome"
           />
@@ -163,7 +176,7 @@ export default function PerfilScreen() {
           <Text style={styles.label}>Usuário</Text>
           <TextInput
             style={styles.input}
-            value={formData.username}
+            value={state.formData.username}
             onChangeText={(value) => handleFieldChange("username", value)}
             placeholder="Digite seu usuário"
             autoCapitalize="none"
@@ -179,28 +192,28 @@ export default function PerfilScreen() {
           <Text style={styles.label}>Deseja alterar a senha?</Text>
           <View style={styles.switchButtons}>
             <TouchableOpacity
-              style={[styles.switchButton, wantChangePassword && styles.switchButtonActive]}
-              onPress={() => setWantChangePassword(true)}
+              style={[styles.switchButton, state.wantChangePassword && styles.switchButtonActive]}
+              onPress={() => setState(prev => ({ ...prev, wantChangePassword: true }))}
             >
-              <Text style={[styles.switchText, wantChangePassword && styles.switchTextActive]}>Sim</Text>
+              <Text style={[styles.switchText, state.wantChangePassword && styles.switchTextActive]}>Sim</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.switchButton, !wantChangePassword && styles.switchButtonActive]}
-              onPress={() => setWantChangePassword(false)}
+              style={[styles.switchButton, !state.wantChangePassword && styles.switchButtonActive]}
+              onPress={() => setState(prev => ({ ...prev, wantChangePassword: false }))}
             >
-              <Text style={[styles.switchText, !wantChangePassword && styles.switchTextActive]}>Não</Text>
+              <Text style={[styles.switchText, !state.wantChangePassword && styles.switchTextActive]}>Não</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {wantChangePassword ? (
+        {state.wantChangePassword ? (
           <View style={{ gap: 12 }}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Senha atual</Text>
               <TextInput
                 style={styles.input}
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
+                value={state.currentPassword}
+                onChangeText={(value) => setState(prev => ({ ...prev, currentPassword: value }))}
                 placeholder="Digite a senha atual"
                 secureTextEntry
               />
@@ -210,14 +223,14 @@ export default function PerfilScreen() {
               <Text style={styles.label}>Nova senha</Text>
               <TextInput
                 style={styles.input}
-                value={formData.password}
+                value={state.formData.password}
                 onChangeText={(value) => handleFieldChange("password", value)}
                 placeholder="Digite uma nova senha"
                 secureTextEntry
               />
             </View>
 
-            {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+            {state.passwordError ? <Text style={styles.errorText}>{state.passwordError}</Text> : null}
           </View>
         ) : null}
       </View>
