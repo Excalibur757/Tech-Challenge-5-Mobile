@@ -11,6 +11,10 @@ import {
 } from "react-native";
 import { Link, useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
+import BackgroundContainer from "../../components/Background/BackgroundContainer";
+
+// ✅ Importando a imagem de fundo
+import registerBackground from "../../../assets/images/capaLogin.png";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -40,52 +44,57 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <View style={styles.card}>
-        <Text style={styles.title}>Criar conta</Text>
-        <Text style={styles.subtitle}>Cadastre-se para entrar na aplicação</Text>
+    <BackgroundContainer image={registerBackground} style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.innerContainer}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <View style={styles.card}>
+          <Text style={styles.title}>Criar conta</Text>
+          <Text style={styles.subtitle}>Cadastre-se para entrar na aplicação</Text>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <TextInput style={styles.input} placeholder="Nome" value={name} onChangeText={setName} />
-        <TextInput
-          style={styles.input}
-          placeholder="Usuário"
-          autoCapitalize="none"
-          value={username}
-          onChangeText={setUsername}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Senha"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+          <TextInput style={styles.input} placeholder="Nome" value={name} onChangeText={setName} />
+          <TextInput
+            style={styles.input}
+            placeholder="Usuário"
+            autoCapitalize="none"
+            value={username}
+            onChangeText={setUsername}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Senha"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
 
-        <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Cadastrar</Text>}
-        </TouchableOpacity>
-
-        <Link href="/login" asChild>
-          <TouchableOpacity style={styles.linkButton}>
-            <Text style={styles.linkText}>Já possui conta? Entrar</Text>
+          <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Cadastrar</Text>}
           </TouchableOpacity>
-        </Link>
-      </View>
-    </KeyboardAvoidingView>
+
+          <Link href="/login" asChild>
+            <TouchableOpacity style={styles.linkButton}>
+              <Text style={styles.linkText}>Já possui conta? Entrar</Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+      </KeyboardAvoidingView>
+    </BackgroundContainer>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  innerContainer: {
+    flex: 1,
     justifyContent: "center",
     padding: 24,
-    backgroundColor: "#f4f4f4",
+    backgroundColor: "rgba(244, 244, 244, 0.8)",
   },
   card: {
     backgroundColor: "#fff",
