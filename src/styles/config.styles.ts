@@ -251,4 +251,24 @@ export const createConfigStyles = (colors: ColorPalette) => StyleSheet.create({
     marginTop: 4,
     textAlign: "center",
   },
+  resetTutorialButton: {
+    backgroundColor: colors.danger || "#E74C3C",
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+
+  resetTutorialText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });

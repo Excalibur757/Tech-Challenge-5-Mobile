@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import {
   View,
   Text,
@@ -18,37 +18,155 @@ type ProfileFormData = {
   password: string;
 };
 
+type ProfileState = {
+  formData: ProfileFormData;
+  originalData: ProfileFormData;
+  currentPassword: string;
+  passwordError: string;
+  wantChangePassword: boolean;
+};
+
+type ProfileAction =
+  | { type: 'SET_USER_DATA'; payload: { name: string; username: string; password: string } }
+  | { type: 'UPDATE_FIELD'; field: keyof ProfileFormData; value: string }
+  | { type: 'SET_PASSWORD_ERROR'; error: string }
+  | { type: 'CLEAR_PASSWORD_ERROR' }
+  | { type: 'TOGGLE_CHANGE_PASSWORD'; value: boolean }
+  | { type: 'SET_CURRENT_PASSWORD'; value: string }
+  | { type: 'SAVE_SUCCESS'; payload: { name: string; username: string; password: string } }
+  | { type: 'RESTORE' }
+  | { type: 'RESET' };
+
+const initialState: ProfileState = {
+  formData: { name: "", username: "", password: "" },
+  originalData: { name: "", username: "", password: "" },
+  currentPassword: "",
+  passwordError: "",
+  wantChangePassword: false
+};
+
+function profileReducer(state: ProfileState, action: ProfileAction): ProfileState {
+  switch (action.type) {
+    case 'SET_USER_DATA':
+      const nextData = {
+        name: action.payload.name,
+        username: action.payload.username,
+        password: action.payload.password,
+      };
+      // Verifica se os dados são iguais para evitar re-renderização
+      const isSameData = 
+        state.formData.name === nextData.name &&
+        state.formData.username === nextData.username &&
+        state.formData.password === nextData.password;
+      
+      if (isSameData) {
+        return state;
+      }
+      
+      return {
+        ...state,
+        formData: nextData,
+        originalData: nextData,
+        currentPassword: "",
+        passwordError: "",
+        wantChangePassword: false
+      };
+      
+    case 'UPDATE_FIELD':
+      return {
+        ...state,
+        formData: { ...state.formData, [action.field]: action.value },
+        passwordError: action.field === "password" ? "" : state.passwordError
+      };
+      
+    case 'SET_PASSWORD_ERROR':
+      return { ...state, passwordError: action.error };
+      
+    case 'CLEAR_PASSWORD_ERROR':
+      return { ...state, passwordError: "" };
+      
+    case 'TOGGLE_CHANGE_PASSWORD':
+      return { ...state, wantChangePassword: action.value };
+      
+    case 'SET_CURRENT_PASSWORD':
+      return { ...state, currentPassword: action.value };
+      
+    case 'SAVE_SUCCESS':
+      return {
+        ...state,
+        originalData: {
+          name: action.payload.name,
+          username: action.payload.username,
+          password: action.payload.password,
+        },
+        currentPassword: "",
+        wantChangePassword: false
+      };
+      
+    case 'RESTORE':
+      return {
+        ...state,
+        formData: state.originalData,
+        currentPassword: "",
+        passwordError: "",
+        wantChangePassword: false
+      };
+      
+    case 'RESET':
+      return {
+        ...state,
+        formData: state.originalData,
+        currentPassword: "",
+        passwordError: "",
+        wantChangePassword: false
+      };
+      
+    default:
+      return state;
+  }
+}
+
 export default function PerfilScreen() {
   const router = useRouter();
   const { user, updateProfile } = useAuth();
-  const [formData, setFormData] = useState<ProfileFormData>({
-    name: "",
-    username: "",
-    password: "",
-  });
-  const [originalData, setOriginalData] = useState<ProfileFormData>({
-    name: "",
-    username: "",
-    password: "",
-  });
-  const [wantChangePassword, setWantChangePassword] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+  
+  // ✅ Usando useReducer com inicialização lazy
+  const [state, dispatch] = useReducer(
+    profileReducer,
+    undefined,
+    () => {
+      if (user) {
+        const nextData = {
+          name: user.name,
+          username: user.username,
+          password: user.password,
+        };
+        return {
+          formData: nextData,
+          originalData: nextData,
+          currentPassword: "",
+          passwordError: "",
+          wantChangePassword: false
+        };
+      }
+      return initialState;
+    }
+  );
+
   const [isSaving, setIsSaving] = useState(false);
   const [showSavedMessage, setShowSavedMessage] = useState(false);
 
+  // ✅ Effect para sincronizar com o user - agora usando dispatch (que é estável)
   useEffect(() => {
     if (user) {
-      const nextData = {
-        name: user.name,
-        username: user.username,
-        password: user.password,
-      };
-      setFormData(nextData);
-      setOriginalData(nextData);
-      setCurrentPassword("");
-      setPasswordError("");
-      setWantChangePassword(false);
+      dispatch({
+        type: 'SET_USER_DATA',
+        payload: {
+          name: user.name,
+          username: user.username,
+          password: user.password,
+        }
+      });
     }
   }, [user]);
 
@@ -62,10 +180,7 @@ export default function PerfilScreen() {
   }, [showSavedMessage]);
 
   const handleFieldChange = (field: keyof ProfileFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (field === "password") {
-      setPasswordError("");
-    }
+    dispatch({ type: 'UPDATE_FIELD', field, value });
   };
 
   const handleSave = async () => {
@@ -73,32 +188,33 @@ export default function PerfilScreen() {
       return;
     }
 
-    if (wantChangePassword && currentPassword !== user.password) {
-      setPasswordError("A senha atual informada não confere.");
+    if (state.wantChangePassword && state.currentPassword !== user.password) {
+      dispatch({ type: 'SET_PASSWORD_ERROR', error: "A senha atual informada não confere." });
       return;
     }
 
     setIsSaving(true);
     const updates: Partial<Pick<ProfileFormData, "name" | "username" | "password">> = {
-      name: formData.name,
-      username: formData.username,
+      name: state.formData.name,
+      username: state.formData.username,
     };
 
-    if (wantChangePassword) {
-      updates.password = formData.password;
+    if (state.wantChangePassword) {
+      updates.password = state.formData.password;
     }
 
     const ok = await updateProfile(updates);
     setIsSaving(false);
 
     if (ok) {
-      setOriginalData({
-        name: formData.name,
-        username: formData.username,
-        password: wantChangePassword ? formData.password : user.password,
+      dispatch({
+        type: 'SAVE_SUCCESS',
+        payload: {
+          name: state.formData.name,
+          username: state.formData.username,
+          password: state.wantChangePassword ? state.formData.password : user.password,
+        }
       });
-      setCurrentPassword("");
-      setWantChangePassword(false);
       setShowSavedMessage(true);
       Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
     } else {
@@ -107,16 +223,13 @@ export default function PerfilScreen() {
   };
 
   const handleRestore = () => {
-    setFormData(originalData);
-    setCurrentPassword("");
-    setPasswordError("");
-    setWantChangePassword(false);
+    dispatch({ type: 'RESTORE' });
   };
 
   const hasChanges =
-    formData.name !== originalData.name ||
-    formData.username !== originalData.username ||
-    (wantChangePassword && formData.password !== originalData.password);
+    state.formData.name !== state.originalData.name ||
+    state.formData.username !== state.originalData.username ||
+    (state.wantChangePassword && state.formData.password !== state.originalData.password);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -153,7 +266,7 @@ export default function PerfilScreen() {
           <Text style={styles.label}>Nome completo</Text>
           <TextInput
             style={styles.input}
-            value={formData.name}
+            value={state.formData.name}
             onChangeText={(value) => handleFieldChange("name", value)}
             placeholder="Digite seu nome"
           />
@@ -163,7 +276,7 @@ export default function PerfilScreen() {
           <Text style={styles.label}>Usuário</Text>
           <TextInput
             style={styles.input}
-            value={formData.username}
+            value={state.formData.username}
             onChangeText={(value) => handleFieldChange("username", value)}
             placeholder="Digite seu usuário"
             autoCapitalize="none"
@@ -179,28 +292,28 @@ export default function PerfilScreen() {
           <Text style={styles.label}>Deseja alterar a senha?</Text>
           <View style={styles.switchButtons}>
             <TouchableOpacity
-              style={[styles.switchButton, wantChangePassword && styles.switchButtonActive]}
-              onPress={() => setWantChangePassword(true)}
+              style={[styles.switchButton, state.wantChangePassword && styles.switchButtonActive]}
+              onPress={() => dispatch({ type: 'TOGGLE_CHANGE_PASSWORD', value: true })}
             >
-              <Text style={[styles.switchText, wantChangePassword && styles.switchTextActive]}>Sim</Text>
+              <Text style={[styles.switchText, state.wantChangePassword && styles.switchTextActive]}>Sim</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.switchButton, !wantChangePassword && styles.switchButtonActive]}
-              onPress={() => setWantChangePassword(false)}
+              style={[styles.switchButton, !state.wantChangePassword && styles.switchButtonActive]}
+              onPress={() => dispatch({ type: 'TOGGLE_CHANGE_PASSWORD', value: false })}
             >
-              <Text style={[styles.switchText, !wantChangePassword && styles.switchTextActive]}>Não</Text>
+              <Text style={[styles.switchText, !state.wantChangePassword && styles.switchTextActive]}>Não</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {wantChangePassword ? (
+        {state.wantChangePassword ? (
           <View style={{ gap: 12 }}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Senha atual</Text>
               <TextInput
                 style={styles.input}
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
+                value={state.currentPassword}
+                onChangeText={(value) => dispatch({ type: 'SET_CURRENT_PASSWORD', value })}
                 placeholder="Digite a senha atual"
                 secureTextEntry
               />
@@ -210,14 +323,14 @@ export default function PerfilScreen() {
               <Text style={styles.label}>Nova senha</Text>
               <TextInput
                 style={styles.input}
-                value={formData.password}
+                value={state.formData.password}
                 onChangeText={(value) => handleFieldChange("password", value)}
                 placeholder="Digite uma nova senha"
                 secureTextEntry
               />
             </View>
 
-            {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+            {state.passwordError ? <Text style={styles.errorText}>{state.passwordError}</Text> : null}
           </View>
         ) : null}
       </View>

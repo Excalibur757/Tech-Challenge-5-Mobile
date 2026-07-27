@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type User = {
@@ -45,7 +45,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadSession();
   }, []);
 
-  const signIn = async (username: string, password: string) => {
+  // ✅ Envolvendo com useCallback para evitar recriação desnecessária
+  const signIn = useCallback(async (username: string, password: string) => {
     try {
       const storedUsers = await AsyncStorage.getItem(USERS_STORAGE_KEY);
       const users: User[] = storedUsers ? JSON.parse(storedUsers) : [];
@@ -67,9 +68,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn("Erro ao fazer login", error);
       return false;
     }
-  };
+  }, []);
 
-  const signUp = async (name: string, username: string, password: string) => {
+  // ✅ Envolvendo com useCallback para evitar recriação desnecessária
+  const signUp = useCallback(async (name: string, username: string, password: string) => {
     if (!name.trim() || !username.trim() || !password.trim()) {
       return false;
     }
@@ -103,9 +105,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn("Erro ao criar conta", error);
       return false;
     }
-  };
+  }, []);
 
-  const updateProfile = async (updates: Partial<Pick<User, "name" | "username" | "password">>) => {
+  // ✅ Envolvendo com useCallback para evitar recriação desnecessária
+  const updateProfile = useCallback(async (updates: Partial<Pick<User, "name" | "username" | "password">>) => {
     if (!user) {
       return false;
     }
@@ -146,17 +149,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn("Erro ao atualizar perfil", error);
       return false;
     }
-  };
+  }, [user]); // ✅ Dependência: user
 
-  const signOut = async () => {
+  // ✅ Envolvendo com useCallback para evitar recriação desnecessária
+  const signOut = useCallback(async () => {
     try {
       await AsyncStorage.removeItem(CURRENT_USER_STORAGE_KEY);
       setUser(null);
     } catch (error) {
       console.warn("Erro ao sair", error);
     }
-  };
+  }, []);
 
+  // ✅ Corrigindo o useMemo com todas as dependências
   const value = useMemo(
     () => ({
       user,
@@ -167,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateProfile,
       signOut,
     }),
-    [user, isLoading]
+    [user, isLoading, signIn, signUp, updateProfile, signOut] // ✅ Todas as dependências incluídas
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
