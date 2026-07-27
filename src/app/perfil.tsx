@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import {
   View,
   Text,
@@ -26,56 +26,121 @@ type ProfileState = {
   wantChangePassword: boolean;
 };
 
-export default function PerfilScreen() {
-  const router = useRouter();
-  const { user, updateProfile } = useAuth();
-  
-  // ✅ Estado inicial com os dados do user
-  const [state, setState] = useState<ProfileState>(() => {
-    if (user) {
+type ProfileAction =
+  | { type: 'SET_USER_DATA'; payload: { name: string; username: string; password: string } }
+  | { type: 'UPDATE_FIELD'; field: keyof ProfileFormData; value: string }
+  | { type: 'SET_PASSWORD_ERROR'; error: string }
+  | { type: 'CLEAR_PASSWORD_ERROR' }
+  | { type: 'TOGGLE_CHANGE_PASSWORD'; value: boolean }
+  | { type: 'SET_CURRENT_PASSWORD'; value: string }
+  | { type: 'SAVE_SUCCESS'; payload: { name: string; username: string; password: string } }
+  | { type: 'RESTORE' }
+  | { type: 'RESET' };
+
+const initialState: ProfileState = {
+  formData: { name: "", username: "", password: "" },
+  originalData: { name: "", username: "", password: "" },
+  currentPassword: "",
+  passwordError: "",
+  wantChangePassword: false
+};
+
+function profileReducer(state: ProfileState, action: ProfileAction): ProfileState {
+  switch (action.type) {
+    case 'SET_USER_DATA':
       const nextData = {
-        name: user.name,
-        username: user.username,
-        password: user.password,
+        name: action.payload.name,
+        username: action.payload.username,
+        password: action.payload.password,
       };
+      // Verifica se os dados são iguais para evitar re-renderização
+      const isSameData = 
+        state.formData.name === nextData.name &&
+        state.formData.username === nextData.username &&
+        state.formData.password === nextData.password;
+      
+      if (isSameData) {
+        return state;
+      }
+      
       return {
+        ...state,
         formData: nextData,
         originalData: nextData,
         currentPassword: "",
         passwordError: "",
         wantChangePassword: false
       };
-    }
-    return {
-      formData: { name: "", username: "", password: "" },
-      originalData: { name: "", username: "", password: "" },
-      currentPassword: "",
-      passwordError: "",
-      wantChangePassword: false
-    };
-  });
-
-  const [isSaving, setIsSaving] = useState(false);
-  const [showSavedMessage, setShowSavedMessage] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      const nextData = {
-        name: user.name,
-        username: user.username,
-        password: user.password,
+      
+    case 'UPDATE_FIELD':
+      return {
+        ...state,
+        formData: { ...state.formData, [action.field]: action.value },
+        passwordError: action.field === "password" ? "" : state.passwordError
       };
+      
+    case 'SET_PASSWORD_ERROR':
+      return { ...state, passwordError: action.error };
+      
+    case 'CLEAR_PASSWORD_ERROR':
+      return { ...state, passwordError: "" };
+      
+    case 'TOGGLE_CHANGE_PASSWORD':
+      return { ...state, wantChangePassword: action.value };
+      
+    case 'SET_CURRENT_PASSWORD':
+      return { ...state, currentPassword: action.value };
+      
+    case 'SAVE_SUCCESS':
+      return {
+        ...state,
+        originalData: {
+          name: action.payload.name,
+          username: action.payload.username,
+          password: action.payload.password,
+        },
+        currentPassword: "",
+        wantChangePassword: false
+      };
+      
+    case 'RESTORE':
+      return {
+        ...state,
+        formData: state.originalData,
+        currentPassword: "",
+        passwordError: "",
+        wantChangePassword: false
+      };
+      
+    case 'RESET':
+      return {
+        ...state,
+        formData: state.originalData,
+        currentPassword: "",
+        passwordError: "",
+        wantChangePassword: false
+      };
+      
+    default:
+      return state;
+  }
+}
 
-      setState(prevState => {
-        const isSameData = 
-          prevState.formData.name === nextData.name &&
-          prevState.formData.username === nextData.username &&
-          prevState.formData.password === nextData.password;
-        
-        if (isSameData) {
-          return prevState;
-        }
-        
+export default function PerfilScreen() {
+  const router = useRouter();
+  const { user, updateProfile } = useAuth();
+  
+  // ✅ Usando useReducer com inicialização lazy
+  const [state, dispatch] = useReducer(
+    profileReducer,
+    undefined,
+    () => {
+      if (user) {
+        const nextData = {
+          name: user.name,
+          username: user.username,
+          password: user.password,
+        };
         return {
           formData: nextData,
           originalData: nextData,
@@ -83,6 +148,24 @@ export default function PerfilScreen() {
           passwordError: "",
           wantChangePassword: false
         };
+      }
+      return initialState;
+    }
+  );
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSavedMessage, setShowSavedMessage] = useState(false);
+
+  // ✅ Effect para sincronizar com o user - agora usando dispatch (que é estável)
+  useEffect(() => {
+    if (user) {
+      dispatch({
+        type: 'SET_USER_DATA',
+        payload: {
+          name: user.name,
+          username: user.username,
+          password: user.password,
+        }
       });
     }
   }, [user]);
@@ -97,11 +180,7 @@ export default function PerfilScreen() {
   }, [showSavedMessage]);
 
   const handleFieldChange = (field: keyof ProfileFormData, value: string) => {
-    setState(prev => ({
-      ...prev,
-      formData: { ...prev.formData, [field]: value },
-      passwordError: field === "password" ? "" : prev.passwordError
-    }));
+    dispatch({ type: 'UPDATE_FIELD', field, value });
   };
 
   const handleSave = async () => {
@@ -110,7 +189,7 @@ export default function PerfilScreen() {
     }
 
     if (state.wantChangePassword && state.currentPassword !== user.password) {
-      setState(prev => ({ ...prev, passwordError: "A senha atual informada não confere." }));
+      dispatch({ type: 'SET_PASSWORD_ERROR', error: "A senha atual informada não confere." });
       return;
     }
 
@@ -128,16 +207,14 @@ export default function PerfilScreen() {
     setIsSaving(false);
 
     if (ok) {
-      setState(prev => ({
-        ...prev,
-        originalData: {
+      dispatch({
+        type: 'SAVE_SUCCESS',
+        payload: {
           name: state.formData.name,
           username: state.formData.username,
           password: state.wantChangePassword ? state.formData.password : user.password,
-        },
-        currentPassword: "",
-        wantChangePassword: false
-      }));
+        }
+      });
       setShowSavedMessage(true);
       Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
     } else {
@@ -146,13 +223,7 @@ export default function PerfilScreen() {
   };
 
   const handleRestore = () => {
-    setState(prev => ({
-      ...prev,
-      formData: prev.originalData,
-      currentPassword: "",
-      passwordError: "",
-      wantChangePassword: false
-    }));
+    dispatch({ type: 'RESTORE' });
   };
 
   const hasChanges =
@@ -222,13 +293,13 @@ export default function PerfilScreen() {
           <View style={styles.switchButtons}>
             <TouchableOpacity
               style={[styles.switchButton, state.wantChangePassword && styles.switchButtonActive]}
-              onPress={() => setState(prev => ({ ...prev, wantChangePassword: true }))}
+              onPress={() => dispatch({ type: 'TOGGLE_CHANGE_PASSWORD', value: true })}
             >
               <Text style={[styles.switchText, state.wantChangePassword && styles.switchTextActive]}>Sim</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.switchButton, !state.wantChangePassword && styles.switchButtonActive]}
-              onPress={() => setState(prev => ({ ...prev, wantChangePassword: false }))}
+              onPress={() => dispatch({ type: 'TOGGLE_CHANGE_PASSWORD', value: false })}
             >
               <Text style={[styles.switchText, !state.wantChangePassword && styles.switchTextActive]}>Não</Text>
             </TouchableOpacity>
@@ -242,7 +313,7 @@ export default function PerfilScreen() {
               <TextInput
                 style={styles.input}
                 value={state.currentPassword}
-                onChangeText={(value) => setState(prev => ({ ...prev, currentPassword: value }))}
+                onChangeText={(value) => dispatch({ type: 'SET_CURRENT_PASSWORD', value })}
                 placeholder="Digite a senha atual"
                 secureTextEntry
               />
