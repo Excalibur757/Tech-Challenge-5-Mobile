@@ -11,11 +11,14 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../context/AuthContext";
+import { blue } from "react-native-reanimated/lib/typescript/Colors";
 
 type ProfileFormData = {
   name: string;
   username: string;
   password: string;
+  email: string;
+  phone: string;
 };
 
 type ProfileState = {
@@ -27,19 +30,19 @@ type ProfileState = {
 };
 
 type ProfileAction =
-  | { type: 'SET_USER_DATA'; payload: { name: string; username: string; password: string } }
+  | { type: 'SET_USER_DATA'; payload: { name: string; username: string; password: string; email: string; phone: string } }
   | { type: 'UPDATE_FIELD'; field: keyof ProfileFormData; value: string }
   | { type: 'SET_PASSWORD_ERROR'; error: string }
   | { type: 'CLEAR_PASSWORD_ERROR' }
   | { type: 'TOGGLE_CHANGE_PASSWORD'; value: boolean }
   | { type: 'SET_CURRENT_PASSWORD'; value: string }
-  | { type: 'SAVE_SUCCESS'; payload: { name: string; username: string; password: string } }
+  | { type: 'SAVE_SUCCESS'; payload: { name: string; username: string; password: string; email: string; phone: string } }
   | { type: 'RESTORE' }
   | { type: 'RESET' };
 
 const initialState: ProfileState = {
-  formData: { name: "", username: "", password: "" },
-  originalData: { name: "", username: "", password: "" },
+  formData: { name: "", username: "", password: "", email: "", phone: "" },
+  originalData: { name: "", username: "", password: "", email: "", phone: "" },
   currentPassword: "",
   passwordError: "",
   wantChangePassword: false
@@ -52,12 +55,16 @@ function profileReducer(state: ProfileState, action: ProfileAction): ProfileStat
         name: action.payload.name,
         username: action.payload.username,
         password: action.payload.password,
+        email: action.payload.email,
+        phone: action.payload.phone
       };
       // Verifica se os dados são iguais para evitar re-renderização
       const isSameData = 
         state.formData.name === nextData.name &&
         state.formData.username === nextData.username &&
-        state.formData.password === nextData.password;
+        state.formData.password === nextData.password &&
+        state.formData.email === nextData.email &&
+        state.formData.phone === nextData.phone;
       
       if (isSameData) {
         return state;
@@ -98,6 +105,8 @@ function profileReducer(state: ProfileState, action: ProfileAction): ProfileStat
           name: action.payload.name,
           username: action.payload.username,
           password: action.payload.password,
+          email: action.payload.email,
+          phone: action.payload.phone
         },
         currentPassword: "",
         wantChangePassword: false
@@ -140,6 +149,8 @@ export default function PerfilScreen() {
           name: user.name,
           username: user.username,
           password: user.password,
+          email: user.email ?? "",
+          phone: user.phone ?? ""
         };
         return {
           formData: nextData,
@@ -165,6 +176,8 @@ export default function PerfilScreen() {
           name: user.name,
           username: user.username,
           password: user.password,
+          email: user.email ?? "",
+          phone: user.phone ?? "",
         }
       });
     }
@@ -194,9 +207,11 @@ export default function PerfilScreen() {
     }
 
     setIsSaving(true);
-    const updates: Partial<Pick<ProfileFormData, "name" | "username" | "password">> = {
+    const updates: Partial<Pick<ProfileFormData, "name" | "username" | "password" | "email" | "phone">> = {
       name: state.formData.name,
       username: state.formData.username,
+      email: state.formData.email,
+      phone: state.formData.phone,
     };
 
     if (state.wantChangePassword) {
@@ -213,6 +228,8 @@ export default function PerfilScreen() {
           name: state.formData.name,
           username: state.formData.username,
           password: state.wantChangePassword ? state.formData.password : user.password,
+          email: state.formData.email,
+          phone: state.formData.phone
         }
       });
       setShowSavedMessage(true);
@@ -227,6 +244,8 @@ export default function PerfilScreen() {
   };
 
   const hasChanges =
+    state.formData.email !== state.originalData.email ||
+    state.formData.phone !== state.originalData.phone ||
     state.formData.name !== state.originalData.name ||
     state.formData.username !== state.originalData.username ||
     (state.wantChangePassword && state.formData.password !== state.originalData.password);
@@ -280,6 +299,31 @@ export default function PerfilScreen() {
             onChangeText={(value) => handleFieldChange("username", value)}
             placeholder="Digite seu usuário"
             autoCapitalize="none"
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>E-mail (opcional)</Text>
+          <TextInput
+            style={styles.input}
+            value={state.formData.email}
+            onChangeText={(value) => handleFieldChange("email", value)}
+            placeholder="Digite seu e-mail"
+            placeholderTextColor="#cacaca"
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Celular (opcional)</Text>
+          <TextInput
+            style={styles.input}
+            value={state.formData.phone}
+            onChangeText={(value) => handleFieldChange("phone", value)}
+            placeholderTextColor="#cacaca"
+            placeholder="(11) 99999-9999"
+            keyboardType="phone-pad"
           />
         </View>
       </View>
