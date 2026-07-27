@@ -1,6 +1,6 @@
 <h1 align="center">
   <a href="https://github.com/SEU_USUARIO/SEU_REPOSITORIO">
-    Senior Ease
+    Tech Challenge - Fase 05
   </a>
 </h1>
 
