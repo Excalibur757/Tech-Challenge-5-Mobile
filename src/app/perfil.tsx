@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -30,18 +30,42 @@ export default function PerfilScreen() {
   const router = useRouter();
   const { user, updateProfile } = useAuth();
   
-  const [state, setState] = useState<ProfileState>({
-    formData: { name: "", username: "", password: "" },
-    originalData: { name: "", username: "", password: "" },
-    currentPassword: "",
-    passwordError: "",
-    wantChangePassword: false
+  // ✅ Inicialização com os dados do user se disponível
+  const [state, setState] = useState<ProfileState>(() => {
+    if (user) {
+      const nextData = {
+        name: user.name,
+        username: user.username,
+        password: user.password,
+      };
+      return {
+        formData: nextData,
+        originalData: nextData,
+        currentPassword: "",
+        passwordError: "",
+        wantChangePassword: false
+      };
+    }
+    return {
+      formData: { name: "", username: "", password: "" },
+      originalData: { name: "", username: "", password: "" },
+      currentPassword: "",
+      passwordError: "",
+      wantChangePassword: false
+    };
   });
 
   const [isSaving, setIsSaving] = useState(false);
   const [showSavedMessage, setShowSavedMessage] = useState(false);
+  
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
     if (user) {
       const nextData = {
         name: user.name,
