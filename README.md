@@ -122,7 +122,7 @@ git clone https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
 ### 2. Entre na pasta
 
 ```bash
-cd SeniorEase
+cd Tech-Challenge-5-Mobile
 ```
 
 ### 3. Instale as dependências
